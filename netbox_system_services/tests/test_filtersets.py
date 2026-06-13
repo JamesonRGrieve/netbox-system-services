@@ -1,0 +1,143 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+"""FilterSet tests against a real DB (no mocks)."""
+from django.test import TestCase
+from utilities.testing import create_test_device
+from netbox_system_services.choices import (
+    DNSResolverModeChoices, SNMPAccessChoices, SNMPVersionChoices, SyslogSeverityChoices,
+    SyslogTransportChoices,
+)
+from netbox_system_services.filtersets import (
+    DNSResolverConfigFilterSet, NTPConfigFilterSet, NTPServerFilterSet, SNMPCommunityFilterSet,
+    SNMPConfigFilterSet, SNMPTrapTargetFilterSet, SyslogConfigFilterSet, SyslogServerFilterSet,
+    SystemConfigFilterSet,
+)
+from netbox_system_services.models import (
+    DNSResolverConfig, NTPConfig, NTPServer, SNMPCommunity, SNMPConfig, SNMPTrapTarget,
+    SyslogConfig, SyslogServer, SystemConfig,
+)
+
+
+class SystemConfigFilterSetTest(TestCase):
+    queryset = SystemConfig.objects.all()
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.d1 = create_test_device("dev1")
+        cls.d2 = create_test_device("dev2")
+        SystemConfig.objects.create(device=cls.d1, location="DC-A", contact="a@x")
+        SystemConfig.objects.create(device=cls.d2, location="DC-B", contact="b@x")
+
+    def test_device_id_scopes(self):
+        self.assertEqual(SystemConfigFilterSet({"device_id": [self.d1.pk]}, self.queryset).qs.count(), 1)
+
+    def test_device_name(self):
+        self.assertEqual(SystemConfigFilterSet({"device": [self.d2.name]}, self.queryset).qs.count(), 1)
+
+    def test_search(self):
+        self.assertEqual(SystemConfigFilterSet({"q": "DC-A"}, self.queryset).qs.count(), 1)
+
+
+class SNMPFilterSetTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.d1 = create_test_device("dev1")
+        cls.d2 = create_test_device("dev2")
+        cls.c1 = SNMPConfig.objects.create(device=cls.d1, listen_interface="lan")
+        cls.c2 = SNMPConfig.objects.create(device=cls.d2, enabled=False)
+        SNMPCommunity.objects.bulk_create([
+            SNMPCommunity(snmp_config=cls.c1, name="ro1", access=SNMPAccessChoices.RO),
+            SNMPCommunity(snmp_config=cls.c1, name="rw1", access=SNMPAccessChoices.RW),
+            SNMPCommunity(snmp_config=cls.c2, name="ro2", access=SNMPAccessChoices.RO),
+        ])
+        SNMPTrapTarget.objects.bulk_create([
+            SNMPTrapTarget(snmp_config=cls.c1, target="192.0.2.10", version=SNMPVersionChoices.V2C),
+            SNMPTrapTarget(snmp_config=cls.c1, target="192.0.2.11", version=SNMPVersionChoices.V1),
+        ])
+
+    def test_config_enabled(self):
+        self.assertEqual(SNMPConfigFilterSet({"enabled": True}, SNMPConfig.objects.all()).qs.count(), 1)
+
+    def test_config_device_id(self):
+        self.assertEqual(SNMPConfigFilterSet({"device_id": [self.d1.pk]}, SNMPConfig.objects.all()).qs.count(), 1)
+
+    def test_community_config_scope_and_access(self):
+        qs = SNMPCommunity.objects.all()
+        self.assertEqual(SNMPCommunityFilterSet({"snmp_config_id": [self.c1.pk]}, qs).qs.count(), 2)
+        self.assertEqual(SNMPCommunityFilterSet({"access": [SNMPAccessChoices.RO]}, qs).qs.count(), 2)
+
+    def test_community_search(self):
+        self.assertEqual(SNMPCommunityFilterSet({"q": "rw1"}, SNMPCommunity.objects.all()).qs.count(), 1)
+
+    def test_trap_version(self):
+        qs = SNMPTrapTarget.objects.all()
+        self.assertEqual(SNMPTrapTargetFilterSet({"version": [SNMPVersionChoices.V1]}, qs).qs.count(), 1)
+        self.assertEqual(SNMPTrapTargetFilterSet({"snmp_config_id": [self.c1.pk]}, qs).qs.count(), 2)
+
+
+class SyslogFilterSetTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.d1 = create_test_device("dev1")
+        cls.d2 = create_test_device("dev2")
+        cls.c1 = SyslogConfig.objects.create(device=cls.d1, severity=SyslogSeverityChoices.WARNING)
+        cls.c2 = SyslogConfig.objects.create(device=cls.d2, severity=SyslogSeverityChoices.ERROR)
+        SyslogServer.objects.bulk_create([
+            SyslogServer(syslog_config=cls.c1, host="192.0.2.30", transport=SyslogTransportChoices.UDP),
+            SyslogServer(syslog_config=cls.c1, host="192.0.2.31", transport=SyslogTransportChoices.TLS),
+            SyslogServer(syslog_config=cls.c2, host="192.0.2.32", transport=SyslogTransportChoices.TCP),
+        ])
+
+    def test_config_severity(self):
+        self.assertEqual(
+            SyslogConfigFilterSet({"severity": [SyslogSeverityChoices.WARNING]}, SyslogConfig.objects.all()).qs.count(), 1
+        )
+
+    def test_server_config_scope_and_transport(self):
+        qs = SyslogServer.objects.all()
+        self.assertEqual(SyslogServerFilterSet({"syslog_config_id": [self.c1.pk]}, qs).qs.count(), 2)
+        self.assertEqual(SyslogServerFilterSet({"transport": [SyslogTransportChoices.TLS]}, qs).qs.count(), 1)
+
+    def test_server_search(self):
+        self.assertEqual(SyslogServerFilterSet({"q": "192.0.2.32"}, SyslogServer.objects.all()).qs.count(), 1)
+
+
+class NTPFilterSetTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.d1 = create_test_device("dev1")
+        cls.d2 = create_test_device("dev2")
+        cls.c1 = NTPConfig.objects.create(device=cls.d1, enabled=True, serve_lan=True)
+        cls.c2 = NTPConfig.objects.create(device=cls.d2, enabled=False)
+        NTPServer.objects.bulk_create([
+            NTPServer(ntp_config=cls.c1, host="0.pool.ntp.org", prefer=True),
+            NTPServer(ntp_config=cls.c1, host="1.pool.ntp.org"),
+            NTPServer(ntp_config=cls.c2, host="time.example"),
+        ])
+
+    def test_config_serve_lan(self):
+        self.assertEqual(NTPConfigFilterSet({"serve_lan": True}, NTPConfig.objects.all()).qs.count(), 1)
+
+    def test_server_config_scope_and_prefer(self):
+        qs = NTPServer.objects.all()
+        self.assertEqual(NTPServerFilterSet({"ntp_config_id": [self.c1.pk]}, qs).qs.count(), 2)
+        self.assertEqual(NTPServerFilterSet({"prefer": True}, qs).qs.count(), 1)
+
+    def test_server_search(self):
+        self.assertEqual(NTPServerFilterSet({"q": "time.example"}, NTPServer.objects.all()).qs.count(), 1)
+
+
+class DNSResolverConfigFilterSetTest(TestCase):
+    queryset = DNSResolverConfig.objects.all()
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.d1 = create_test_device("dev1")
+        cls.d2 = create_test_device("dev2")
+        DNSResolverConfig.objects.create(device=cls.d1, mode=DNSResolverModeChoices.STATIC, nameservers=["192.0.2.1"])
+        DNSResolverConfig.objects.create(device=cls.d2, mode=DNSResolverModeChoices.DHCP)
+
+    def test_mode(self):
+        self.assertEqual(DNSResolverConfigFilterSet({"mode": [DNSResolverModeChoices.STATIC]}, self.queryset).qs.count(), 1)
+
+    def test_device_id(self):
+        self.assertEqual(DNSResolverConfigFilterSet({"device_id": [self.d2.pk]}, self.queryset).qs.count(), 1)

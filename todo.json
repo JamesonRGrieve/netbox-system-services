@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "domain": "netbox.system-services",
+  "title": "netbox-system-services plugin",
+  "description": "AGPL-3.0 NetBox 4.6 plugin: native SoT for a device's management-plane services (system identity, SNMP, syslog, NTP, DNS resolver), replacing the unstructured config_context blob. Mirrors the sibling netbox-pf plugin structure.",
+  "phases": [
+    {
+      "number": 1,
+      "title": "Plugin skeleton & packaging",
+      "exit_criteria": "PluginConfig loads (name netbox_system_services, base_url system-services, min 4.6.0/max 4.6.99); pyproject installs; LICENSE + SPDX headers + .gitignore present.",
+      "items": [
+        { "number": "1.1", "feature": "PluginConfig + pyproject + LICENSE/.gitignore", "description": "__init__.py PluginConfig, setuptools pyproject (black 100, pytest DJANGO_SETTINGS_MODULE), AGPL LICENSE, Python .gitignore", "done": true },
+        { "number": "1.2", "feature": "choices.py", "description": "SNMPAccess (ro/rw), SNMPVersion (v1/v2c), SyslogSeverity (debug/info/warning/error), SyslogFacility (user/local0..local7), SyslogTransport (udp/tcp/tls), DNSResolverMode (static/dhcp)", "done": true }
+      ]
+    },
+    {
+      "number": 2,
+      "title": "Models (9) + hand-authored migration",
+      "exit_criteria": "All 9 models present; each config is OneToOne to dcim.Device (CASCADE); child rows FK to their config; ArrayFields on DNSResolverConfig; secrets kept out (logical name/ref only).",
+      "items": [
+        { "number": "2.1", "feature": "SystemConfig", "description": "OneToOne Device; default_gateway, location (sysLocation), contact (sysContact); hostname = device.name (not stored)", "sot": "NB", "done": true },
+        { "number": "2.2", "feature": "SNMPConfig + SNMPCommunity + SNMPTrapTarget", "description": "agent (enabled, listen_interface); community (name=OpenBao key, access, restricted); trap target (target, port, version, community_ref=OpenBao key). Secret strings live in OpenBao, never NetBox.", "sot": "NB; Vault", "done": true },
+        { "number": "2.3", "feature": "SyslogConfig + SyslogServer", "description": "policy (severity, facility, retention_days); remote server (host, port, transport)", "sot": "NB", "done": true },
+        { "number": "2.4", "feature": "NTPConfig + NTPServer", "description": "roles (enabled, broadcast, serve_lan); upstream peer (host, prefer)", "sot": "NB", "done": true },
+        { "number": "2.5", "feature": "DNSResolverConfig", "description": "device's OWN stub resolver: mode (static/dhcp), ordered nameservers ArrayField, ordered search_domains ArrayField. NOT authoritative zones (netbox-dns).", "sot": "NB", "done": true },
+        { "number": "2.6", "feature": "migrations/0001_initial.py", "description": "Hand-authored, mirroring netbox-pf/netbox-fs: NetBoxModel base fields, OneToOne/FK, GenericIPAddressField, postgres ArrayField, taggit tags, unique constraint on SNMPCommunity(config,name)", "done": true }
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Plugin surface (UI + API + filters)",
+      "exit_criteria": "filtersets/forms/tables/navigation/views/urls and api/{serializers,views,urls} cover all 9 models; REST contract browsable; graphql placeholder present.",
+      "items": [
+        { "number": "3.1", "feature": "filtersets.py", "description": "NetBoxModelFilterSet per model; explicit device_id/device + config_id FK filters; choice filters; search()", "done": true },
+        { "number": "3.2", "feature": "forms.py", "description": "model forms (DynamicModelChoiceField + FieldSets) + filter forms per model", "done": true },
+        { "number": "3.3", "feature": "tables.py + navigation.py", "description": "NetBoxTable per model; PluginMenu grouped System/SNMP/Syslog/NTP/DNS", "done": true },
+        { "number": "3.4", "feature": "views.py + urls.py", "description": "generic Object/List/Edit/Delete/BulkDelete per model; list/add/detail/edit/delete/changelog/journal routes", "done": true },
+        { "number": "3.5", "feature": "api/{serializers,views,urls}.py", "description": "NetBoxModelSerializer + NetBoxModelViewSet + NetBoxRouter for all 9 models — the contract ansible-tofu reads back", "done": true },
+        { "number": "3.6", "feature": "graphql/ placeholder", "description": "empty graphql/__init__.py mirroring netbox-pf (no GraphQL type yet)", "done": true }
+      ]
+    },
+    {
+      "number": 4,
+      "title": "Tests (NO MOCKS, real DB)",
+      "exit_criteria": "test_models/test_api/test_filtersets cover every model/serializer/filterset/view via NetBox utilities.testing base classes against the real test DB.",
+      "items": [
+        { "number": "4.1", "feature": "test_models.py", "description": "creation, str, get_absolute_url, defaults, OneToOne-per-device uniqueness, SNMPCommunity unique-per-config, CASCADE, ArrayField order round-trip", "done": true },
+        { "number": "4.2", "feature": "test_api.py", "description": "APIViewTestCases CRUD mixins per model; distinct device per OneToOne create row; ArrayField create_data", "done": true },
+        { "number": "4.3", "feature": "test_filtersets.py", "description": "device/config scoping + choice + search filters per filterset", "done": true }
+      ]
+    },
+    {
+      "number": 5,
+      "title": "Pending live validation (runs at deploy on the NetBox CT)",
+      "exit_criteria": "On the target NetBox 4.6 (CT 74234), makemigrations --check passes (hand-authored migration matches the models) AND the test suite passes green. Analogous to the tofu providers' pending live-validation — CANNOT run here because NetBox is not importable in this environment.",
+      "items": [
+        { "number": "5.1", "feature": "makemigrations --check", "description": "python manage.py makemigrations netbox_system_services --check --dry-run on an ephemeral/dev NetBox confirms 0001_initial matches models.py", "done": false },
+        { "number": "5.2", "feature": "manage.py test netbox_system_services", "description": "Run the full suite against the real NetBox test DB (--keepdb -v2); fix any drift from sibling-plugin API assumptions", "done": false }
+      ]
+    }
+  ]
+}

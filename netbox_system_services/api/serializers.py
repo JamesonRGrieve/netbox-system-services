@@ -1,0 +1,125 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+from dcim.api.serializers import DeviceSerializer
+from netbox.api.serializers import NetBoxModelSerializer
+from rest_framework import serializers
+from ..models import (
+    DNSResolverConfig, NTPConfig, NTPServer, SNMPCommunity, SNMPConfig, SNMPTrapTarget,
+    SyslogConfig, SyslogServer, SystemConfig,
+)
+
+
+class SystemConfigSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:systemconfig-detail")
+    device = DeviceSerializer(nested=True)
+
+    class Meta:
+        model = SystemConfig
+        fields = [
+            "id", "url", "display", "device", "default_gateway", "location", "contact",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "device"]
+
+
+class SNMPConfigSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:snmpconfig-detail")
+    device = DeviceSerializer(nested=True)
+
+    class Meta:
+        model = SNMPConfig
+        fields = [
+            "id", "url", "display", "device", "enabled", "listen_interface",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "device", "enabled"]
+
+
+class SNMPCommunitySerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:snmpcommunity-detail")
+    snmp_config = SNMPConfigSerializer(nested=True)
+
+    class Meta:
+        model = SNMPCommunity
+        fields = [
+            "id", "url", "display", "snmp_config", "name", "access", "restricted",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "name", "access"]
+
+
+class SNMPTrapTargetSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:snmptraptarget-detail")
+    snmp_config = SNMPConfigSerializer(nested=True)
+
+    class Meta:
+        model = SNMPTrapTarget
+        fields = [
+            "id", "url", "display", "snmp_config", "target", "port", "version", "community_ref",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "target", "port"]
+
+
+class SyslogConfigSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:syslogconfig-detail")
+    device = DeviceSerializer(nested=True)
+
+    class Meta:
+        model = SyslogConfig
+        fields = [
+            "id", "url", "display", "device", "severity", "facility", "retention_days",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "device", "severity"]
+
+
+class SyslogServerSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:syslogserver-detail")
+    syslog_config = SyslogConfigSerializer(nested=True)
+
+    class Meta:
+        model = SyslogServer
+        fields = [
+            "id", "url", "display", "syslog_config", "host", "port", "transport",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "host", "port"]
+
+
+class NTPConfigSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:ntpconfig-detail")
+    device = DeviceSerializer(nested=True)
+
+    class Meta:
+        model = NTPConfig
+        fields = [
+            "id", "url", "display", "device", "enabled", "broadcast", "serve_lan",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "device", "enabled"]
+
+
+class NTPServerSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:ntpserver-detail")
+    ntp_config = NTPConfigSerializer(nested=True)
+
+    class Meta:
+        model = NTPServer
+        fields = [
+            "id", "url", "display", "ntp_config", "host", "prefer",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "host", "prefer"]
+
+
+class DNSResolverConfigSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:dnsresolverconfig-detail")
+    device = DeviceSerializer(nested=True)
+
+    class Meta:
+        model = DNSResolverConfig
+        fields = [
+            "id", "url", "display", "device", "mode", "nameservers", "search_domains",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "device", "mode"]
