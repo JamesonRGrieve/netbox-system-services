@@ -2,13 +2,14 @@
 from netbox.api.viewsets import NetBoxModelViewSet
 from .. import filtersets
 from ..models import (
-    DNSResolverConfig, NTPConfig, NTPServer, SNMPCommunity, SNMPConfig, SNMPTrapTarget,
-    SyslogConfig, SyslogServer, SystemConfig,
+    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, NTPConfig, NTPServer, SNMPCommunity,
+    SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig, SystemTunable,
 )
 from .serializers import (
-    DNSResolverConfigSerializer, NTPConfigSerializer, NTPServerSerializer,
-    SNMPCommunitySerializer, SNMPConfigSerializer, SNMPTrapTargetSerializer,
-    SyslogConfigSerializer, SyslogServerSerializer, SystemConfigSerializer,
+    DnsForwardZoneSerializer, DNSResolverConfigSerializer, DynamicDNSRecordSerializer,
+    NTPConfigSerializer, NTPServerSerializer, SNMPCommunitySerializer, SNMPConfigSerializer,
+    SNMPTrapTargetSerializer, SyslogConfigSerializer, SyslogServerSerializer,
+    SystemConfigSerializer, SystemTunableSerializer,
 )
 
 
@@ -64,3 +65,21 @@ class DNSResolverConfigViewSet(NetBoxModelViewSet):
     queryset = DNSResolverConfig.objects.prefetch_related("device", "tags")
     serializer_class = DNSResolverConfigSerializer
     filterset_class = filtersets.DNSResolverConfigFilterSet
+
+
+class DnsForwardZoneViewSet(NetBoxModelViewSet):
+    queryset = DnsForwardZone.objects.prefetch_related("device", "tags")
+    serializer_class = DnsForwardZoneSerializer
+    filterset_class = filtersets.DnsForwardZoneFilterSet
+
+
+class SystemTunableViewSet(NetBoxModelViewSet):
+    queryset = SystemTunable.objects.prefetch_related("device", "tags")
+    serializer_class = SystemTunableSerializer
+    filterset_class = filtersets.SystemTunableFilterSet
+
+
+class DynamicDNSRecordViewSet(NetBoxModelViewSet):
+    queryset = DynamicDNSRecord.objects.prefetch_related("device", "tags")
+    serializer_class = DynamicDNSRecordSerializer
+    filterset_class = filtersets.DynamicDNSRecordFilterSet

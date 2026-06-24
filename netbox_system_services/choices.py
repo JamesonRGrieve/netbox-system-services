@@ -61,3 +61,10 @@ class DNSResolverModeChoices(ChoiceSet):
     STATIC = "static"
     DHCP = "dhcp"
     CHOICES = [(STATIC, "Static", "blue"), (DHCP, "DHCP", "green")]
+
+
+class DNSForwardBackendChoices(ChoiceSet):
+    """Resolver daemon a conditional forward zone is programmed into."""
+    UNBOUND = "unbound"
+    DNSMASQ = "dnsmasq"
+    CHOICES = [(UNBOUND, "Unbound", "blue"), (DNSMASQ, "Dnsmasq", "green")]

@@ -3,17 +3,18 @@
 from django.test import TestCase
 from utilities.testing import create_test_device
 from netbox_system_services.choices import (
-    DNSResolverModeChoices, SNMPAccessChoices, SNMPVersionChoices, SyslogSeverityChoices,
-    SyslogTransportChoices,
+    DNSForwardBackendChoices, DNSResolverModeChoices, SNMPAccessChoices, SNMPVersionChoices,
+    SyslogSeverityChoices, SyslogTransportChoices,
 )
 from netbox_system_services.filtersets import (
-    DNSResolverConfigFilterSet, NTPConfigFilterSet, NTPServerFilterSet, SNMPCommunityFilterSet,
-    SNMPConfigFilterSet, SNMPTrapTargetFilterSet, SyslogConfigFilterSet, SyslogServerFilterSet,
-    SystemConfigFilterSet,
+    DnsForwardZoneFilterSet, DNSResolverConfigFilterSet, DynamicDNSRecordFilterSet,
+    NTPConfigFilterSet, NTPServerFilterSet, SNMPCommunityFilterSet, SNMPConfigFilterSet,
+    SNMPTrapTargetFilterSet, SyslogConfigFilterSet, SyslogServerFilterSet, SystemConfigFilterSet,
+    SystemTunableFilterSet,
 )
 from netbox_system_services.models import (
-    DNSResolverConfig, NTPConfig, NTPServer, SNMPCommunity, SNMPConfig, SNMPTrapTarget,
-    SyslogConfig, SyslogServer, SystemConfig,
+    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, NTPConfig, NTPServer, SNMPCommunity,
+    SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig, SystemTunable,
 )
 
 
@@ -141,3 +142,71 @@ class DNSResolverConfigFilterSetTest(TestCase):
 
     def test_device_id(self):
         self.assertEqual(DNSResolverConfigFilterSet({"device_id": [self.d2.pk]}, self.queryset).qs.count(), 1)
+
+
+class DnsForwardZoneFilterSetTest(TestCase):
+    queryset = DnsForwardZone.objects.all()
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.d1 = create_test_device("dev1")
+        cls.d2 = create_test_device("dev2")
+        DnsForwardZone.objects.bulk_create([
+            DnsForwardZone(device=cls.d1, domain="corp.example", server="192.0.2.53", backend=DNSForwardBackendChoices.UNBOUND),
+            DnsForwardZone(device=cls.d1, domain="lab.example", server="192.0.2.54", backend=DNSForwardBackendChoices.DNSMASQ),
+            DnsForwardZone(device=cls.d2, domain="dmz.example", server="192.0.2.55", backend=DNSForwardBackendChoices.UNBOUND),
+        ])
+
+    def test_device_id_scopes(self):
+        self.assertEqual(DnsForwardZoneFilterSet({"device_id": [self.d1.pk]}, self.queryset).qs.count(), 2)
+
+    def test_backend(self):
+        self.assertEqual(
+            DnsForwardZoneFilterSet({"backend": [DNSForwardBackendChoices.DNSMASQ]}, self.queryset).qs.count(), 1
+        )
+
+    def test_search(self):
+        self.assertEqual(DnsForwardZoneFilterSet({"q": "corp.example"}, self.queryset).qs.count(), 1)
+
+
+class SystemTunableFilterSetTest(TestCase):
+    queryset = SystemTunable.objects.all()
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.d1 = create_test_device("dev1")
+        cls.d2 = create_test_device("dev2")
+        SystemTunable.objects.bulk_create([
+            SystemTunable(device=cls.d1, name="net.inet.ip.forwarding", value="1"),
+            SystemTunable(device=cls.d1, name="kern.maxfiles", value="65536"),
+            SystemTunable(device=cls.d2, name="net.inet6.ip6.forwarding", value="1"),
+        ])
+
+    def test_device_id_scopes(self):
+        self.assertEqual(SystemTunableFilterSet({"device_id": [self.d1.pk]}, self.queryset).qs.count(), 2)
+
+    def test_search(self):
+        self.assertEqual(SystemTunableFilterSet({"q": "kern.maxfiles"}, self.queryset).qs.count(), 1)
+
+
+class DynamicDNSRecordFilterSetTest(TestCase):
+    queryset = DynamicDNSRecord.objects.all()
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.d1 = create_test_device("dev1")
+        cls.d2 = create_test_device("dev2")
+        DynamicDNSRecord.objects.bulk_create([
+            DynamicDNSRecord(device=cls.d1, fqdn="home.example", service="cloudflare", enabled=True),
+            DynamicDNSRecord(device=cls.d1, fqdn="vpn.example", service="route53", enabled=False),
+            DynamicDNSRecord(device=cls.d2, fqdn="dmz.example", service="cloudflare", enabled=True),
+        ])
+
+    def test_device_id_scopes(self):
+        self.assertEqual(DynamicDNSRecordFilterSet({"device_id": [self.d1.pk]}, self.queryset).qs.count(), 2)
+
+    def test_enabled(self):
+        self.assertEqual(DynamicDNSRecordFilterSet({"enabled": True}, self.queryset).qs.count(), 2)
+
+    def test_search(self):
+        self.assertEqual(DynamicDNSRecordFilterSet({"q": "vpn.example"}, self.queryset).qs.count(), 1)

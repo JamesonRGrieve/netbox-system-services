@@ -5,12 +5,12 @@ from django.db.utils import IntegrityError
 from django.test import TestCase
 from utilities.testing import create_test_device
 from netbox_system_services.choices import (
-    DNSResolverModeChoices, SNMPAccessChoices, SNMPVersionChoices, SyslogSeverityChoices,
-    SyslogTransportChoices,
+    DNSForwardBackendChoices, DNSResolverModeChoices, SNMPAccessChoices, SNMPVersionChoices,
+    SyslogSeverityChoices, SyslogTransportChoices,
 )
 from netbox_system_services.models import (
-    DNSResolverConfig, NTPConfig, NTPServer, SNMPCommunity, SNMPConfig, SNMPTrapTarget,
-    SyslogConfig, SyslogServer, SystemConfig,
+    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, NTPConfig, NTPServer, SNMPCommunity,
+    SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig, SystemTunable,
 )
 
 
@@ -135,3 +135,81 @@ class DNSResolverConfigModelTest(TestCase):
         self.assertEqual(c.nameservers, [])
         self.assertEqual(c.search_domains, [])
         self.assertEqual(c.get_mode_color(), "green")
+
+
+class DnsForwardZoneModelTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.device = create_test_device("dev1")
+
+    def test_defaults_str_color_and_url(self):
+        z = DnsForwardZone.objects.create(device=self.device, domain="corp.example", server="192.0.2.53")
+        self.assertEqual(z.port, 53)
+        self.assertEqual(z.backend, DNSForwardBackendChoices.UNBOUND)
+        self.assertFalse(z.tcp_upstream)
+        self.assertEqual(z.get_backend_color(), "blue")
+        self.assertEqual(str(z), f"{self.device}: corp.example → 192.0.2.53:53")
+        self.assertIn("/plugins/system-services/dns-forward-zones/", z.get_absolute_url())
+
+    def test_dnsmasq_backend_color(self):
+        z = DnsForwardZone.objects.create(
+            device=self.device, domain="lab.example", server="2001:db8::53",
+            backend=DNSForwardBackendChoices.DNSMASQ, tcp_upstream=True, port=5353,
+        )
+        self.assertEqual(z.get_backend_color(), "green")
+        self.assertTrue(z.tcp_upstream)
+
+    def test_unique_per_device_domain_server(self):
+        DnsForwardZone.objects.create(device=self.device, domain="dup.example", server="192.0.2.53")
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            DnsForwardZone.objects.create(device=self.device, domain="dup.example", server="192.0.2.53")
+
+    def test_same_domain_different_server_allowed(self):
+        DnsForwardZone.objects.create(device=self.device, domain="ha.example", server="192.0.2.1")
+        DnsForwardZone.objects.create(device=self.device, domain="ha.example", server="192.0.2.2")
+        self.assertEqual(DnsForwardZone.objects.filter(domain="ha.example").count(), 2)
+
+
+class SystemTunableModelTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.device = create_test_device("dev1")
+
+    def test_create_str_and_url(self):
+        t = SystemTunable.objects.create(
+            device=self.device, name="net.inet.ip.forwarding", value="1", description="route"
+        )
+        self.assertEqual(str(t), f"{self.device}: net.inet.ip.forwarding=1")
+        self.assertIn("/plugins/system-services/system-tunables/", t.get_absolute_url())
+
+    def test_unique_per_device_name(self):
+        SystemTunable.objects.create(device=self.device, name="kern.maxfiles", value="1024")
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            SystemTunable.objects.create(device=self.device, name="kern.maxfiles", value="2048")
+
+
+class DynamicDNSRecordModelTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.device = create_test_device("dev1")
+
+    def test_defaults_str_and_url(self):
+        r = DynamicDNSRecord.objects.create(device=self.device, fqdn="home.example")
+        self.assertEqual(r.service, "cloudflare")
+        self.assertEqual(r.check_ip_method, "web")
+        self.assertTrue(r.enabled)
+        self.assertEqual(str(r), f"{self.device}: home.example (cloudflare)")
+        self.assertIn("/plugins/system-services/dynamic-dns-records/", r.get_absolute_url())
+
+    def test_credential_ref_is_a_key_not_a_secret(self):
+        """`credential_ref` is a logical OpenBao key, never the token value."""
+        r = DynamicDNSRecord.objects.create(
+            device=self.device, fqdn="vpn.example", credential_ref="ddns/cf-token", enabled=False
+        )
+        self.assertEqual(r.credential_ref, "ddns/cf-token")
+        self.assertFalse(r.enabled)
+
+    def test_unique_per_device_fqdn(self):
+        DynamicDNSRecord.objects.create(device=self.device, fqdn="dup.example")
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            DynamicDNSRecord.objects.create(device=self.device, fqdn="dup.example")

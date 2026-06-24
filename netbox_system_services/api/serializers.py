@@ -3,8 +3,8 @@ from dcim.api.serializers import DeviceSerializer
 from netbox.api.serializers import NetBoxModelSerializer
 from rest_framework import serializers
 from ..models import (
-    DNSResolverConfig, NTPConfig, NTPServer, SNMPCommunity, SNMPConfig, SNMPTrapTarget,
-    SyslogConfig, SyslogServer, SystemConfig,
+    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, NTPConfig, NTPServer, SNMPCommunity,
+    SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig, SystemTunable,
 )
 
 
@@ -123,3 +123,42 @@ class DNSResolverConfigSerializer(NetBoxModelSerializer):
             "tags", "custom_fields", "created", "last_updated",
         ]
         brief_fields = ["id", "url", "display", "device", "mode"]
+
+
+class DnsForwardZoneSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:dnsforwardzone-detail")
+    device = DeviceSerializer(nested=True)
+
+    class Meta:
+        model = DnsForwardZone
+        fields = [
+            "id", "url", "display", "device", "domain", "server", "port", "backend",
+            "tcp_upstream", "description", "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "device", "domain", "server"]
+
+
+class SystemTunableSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:systemtunable-detail")
+    device = DeviceSerializer(nested=True)
+
+    class Meta:
+        model = SystemTunable
+        fields = [
+            "id", "url", "display", "device", "name", "value", "description",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "device", "name", "value"]
+
+
+class DynamicDNSRecordSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:dynamicdnsrecord-detail")
+    device = DeviceSerializer(nested=True)
+
+    class Meta:
+        model = DynamicDNSRecord
+        fields = [
+            "id", "url", "display", "device", "fqdn", "zone", "service", "credential_ref",
+            "check_ip_method", "enabled", "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "device", "fqdn", "service"]

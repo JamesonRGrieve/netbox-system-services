@@ -31,7 +31,15 @@ menu = PluginMenu(
             (_item("syslogconfig", "Syslog Config"), _item("syslogserver", "Syslog Servers")),
         ),
         ("NTP", (_item("ntpconfig", "NTP Config"), _item("ntpserver", "NTP Servers"))),
-        ("DNS", (_item("dnsresolverconfig", "DNS Resolver Config"),)),
+        (
+            "DNS",
+            (
+                _item("dnsresolverconfig", "DNS Resolver Config"),
+                _item("dnsforwardzone", "DNS Forward Zones"),
+                _item("dynamicdnsrecord", "Dynamic DNS Records"),
+            ),
+        ),
+        ("System Tunables", (_item("systemtunable", "System Tunables"),)),
     ),
     icon_class="mdi mdi-cog-transfer",
 )

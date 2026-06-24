@@ -7,8 +7,8 @@ need a distinct device per created object, so each create_data row targets a fre
 """
 from utilities.testing import APIViewTestCases, create_test_device
 from netbox_system_services.models import (
-    DNSResolverConfig, NTPConfig, NTPServer, SNMPCommunity, SNMPConfig, SNMPTrapTarget,
-    SyslogConfig, SyslogServer, SystemConfig,
+    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, NTPConfig, NTPServer, SNMPCommunity,
+    SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig, SystemTunable,
 )
 
 
@@ -188,4 +188,64 @@ class DNSResolverConfigAPITest(_CRUD):
              "nameservers": ["192.0.2.1", "192.0.2.2"], "search_domains": ["corp.example", "lab.example"]},
             {"device": new[1].pk, "mode": "dhcp", "nameservers": [], "search_domains": []},
             {"device": new[2].pk, "mode": "static", "nameservers": ["2001:db8::1"], "search_domains": ["v6.example"]},
+        ]
+
+
+class DnsForwardZoneAPITest(_CRUD):
+    model = DnsForwardZone
+    brief_fields = ["device", "display", "domain", "id", "server", "url"]
+    bulk_update_data = {"backend": "dnsmasq"}
+
+    @classmethod
+    def setUpTestData(cls):
+        dev = create_test_device("fwd")
+        DnsForwardZone.objects.bulk_create([
+            DnsForwardZone(device=dev, domain="a.example", server="192.0.2.1"),
+            DnsForwardZone(device=dev, domain="b.example", server="192.0.2.2", backend="dnsmasq"),
+            DnsForwardZone(device=dev, domain="c.example", server="2001:db8::1", port=5353, tcp_upstream=True),
+        ])
+        cls.create_data = [
+            {"device": dev.pk, "domain": "k1.example", "server": "192.0.2.10", "port": 53, "backend": "unbound"},
+            {"device": dev.pk, "domain": "k2.example", "server": "192.0.2.11", "backend": "dnsmasq", "tcp_upstream": True},
+            {"device": dev.pk, "domain": "k3.example", "server": "2001:db8::9", "port": 5353},
+        ]
+
+
+class SystemTunableAPITest(_CRUD):
+    model = SystemTunable
+    brief_fields = ["device", "display", "id", "name", "url", "value"]
+    bulk_update_data = {"description": "bulk-note"}
+
+    @classmethod
+    def setUpTestData(cls):
+        dev = create_test_device("tunable")
+        SystemTunable.objects.bulk_create([
+            SystemTunable(device=dev, name="net.inet.ip.forwarding", value="1"),
+            SystemTunable(device=dev, name="net.inet6.ip6.forwarding", value="1"),
+            SystemTunable(device=dev, name="kern.maxfiles", value="65536"),
+        ])
+        cls.create_data = [
+            {"device": dev.pk, "name": "net.inet.tcp.blackhole", "value": "2"},
+            {"device": dev.pk, "name": "net.inet.udp.blackhole", "value": "1", "description": "drop"},
+            {"device": dev.pk, "name": "kern.ipc.somaxconn", "value": "1024"},
+        ]
+
+
+class DynamicDNSRecordAPITest(_CRUD):
+    model = DynamicDNSRecord
+    brief_fields = ["device", "display", "fqdn", "id", "service", "url"]
+    bulk_update_data = {"enabled": False}
+
+    @classmethod
+    def setUpTestData(cls):
+        dev = create_test_device("ddns")
+        DynamicDNSRecord.objects.bulk_create([
+            DynamicDNSRecord(device=dev, fqdn="a.example", credential_ref="ddns/a"),
+            DynamicDNSRecord(device=dev, fqdn="b.example", service="route53", enabled=False),
+            DynamicDNSRecord(device=dev, fqdn="c.example", zone="example", check_ip_method="cmd"),
+        ])
+        cls.create_data = [
+            {"device": dev.pk, "fqdn": "k1.example", "service": "cloudflare", "credential_ref": "ddns/k1"},
+            {"device": dev.pk, "fqdn": "k2.example", "service": "route53", "zone": "example", "enabled": False},
+            {"device": dev.pk, "fqdn": "k3.example", "check_ip_method": "web"},
         ]

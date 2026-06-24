@@ -14,5 +14,8 @@ router.register("syslog-servers", views.SyslogServerViewSet)
 router.register("ntp-config", views.NTPConfigViewSet)
 router.register("ntp-servers", views.NTPServerViewSet)
 router.register("dns-resolver-config", views.DNSResolverConfigViewSet)
+router.register("dns-forward-zones", views.DnsForwardZoneViewSet)
+router.register("system-tunables", views.SystemTunableViewSet)
+router.register("dynamic-dns-records", views.DynamicDNSRecordViewSet)
 
 urlpatterns = router.urls

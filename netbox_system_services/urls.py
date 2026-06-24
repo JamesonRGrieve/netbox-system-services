@@ -45,4 +45,13 @@ urlpatterns = [
     *_routes("dns-resolver-config", "dnsresolverconfig", models.DNSResolverConfig,
              views.DNSResolverConfigListView, views.DNSResolverConfigEditView, views.DNSResolverConfigView,
              views.DNSResolverConfigDeleteView, views.DNSResolverConfigBulkDeleteView),
+    *_routes("dns-forward-zones", "dnsforwardzone", models.DnsForwardZone,
+             views.DnsForwardZoneListView, views.DnsForwardZoneEditView, views.DnsForwardZoneView,
+             views.DnsForwardZoneDeleteView, views.DnsForwardZoneBulkDeleteView),
+    *_routes("system-tunables", "systemtunable", models.SystemTunable,
+             views.SystemTunableListView, views.SystemTunableEditView, views.SystemTunableView,
+             views.SystemTunableDeleteView, views.SystemTunableBulkDeleteView),
+    *_routes("dynamic-dns-records", "dynamicdnsrecord", models.DynamicDNSRecord,
+             views.DynamicDNSRecordListView, views.DynamicDNSRecordEditView, views.DynamicDNSRecordView,
+             views.DynamicDNSRecordDeleteView, views.DynamicDNSRecordBulkDeleteView),
 ]

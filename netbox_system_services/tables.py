@@ -2,8 +2,8 @@
 import django_tables2 as tables
 from netbox.tables import NetBoxTable, columns
 from .models import (
-    DNSResolverConfig, NTPConfig, NTPServer, SNMPCommunity, SNMPConfig, SNMPTrapTarget,
-    SyslogConfig, SyslogServer, SystemConfig,
+    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, NTPConfig, NTPServer, SNMPCommunity,
+    SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig, SystemTunable,
 )
 
 
@@ -111,3 +111,39 @@ class DNSResolverConfigTable(NetBoxTable):
         model = DNSResolverConfig
         fields = ("pk", "id", "device", "mode", "nameservers", "search_domains", "tags", "created", "last_updated")
         default_columns = ("device", "mode", "nameservers", "search_domains")
+
+
+class DnsForwardZoneTable(NetBoxTable):
+    device = tables.Column(linkify=True)
+    domain = tables.Column(linkify=True)
+    backend = columns.ChoiceFieldColumn()
+    tcp_upstream = columns.BooleanColumn()
+    tags = columns.TagColumn(url_name="plugins:netbox_system_services:dnsforwardzone_list")
+
+    class Meta(NetBoxTable.Meta):
+        model = DnsForwardZone
+        fields = ("pk", "id", "device", "domain", "server", "port", "backend", "tcp_upstream", "description", "tags", "created", "last_updated")
+        default_columns = ("device", "domain", "server", "port", "backend")
+
+
+class SystemTunableTable(NetBoxTable):
+    device = tables.Column(linkify=True)
+    name = tables.Column(linkify=True)
+    tags = columns.TagColumn(url_name="plugins:netbox_system_services:systemtunable_list")
+
+    class Meta(NetBoxTable.Meta):
+        model = SystemTunable
+        fields = ("pk", "id", "device", "name", "value", "description", "tags", "created", "last_updated")
+        default_columns = ("device", "name", "value")
+
+
+class DynamicDNSRecordTable(NetBoxTable):
+    device = tables.Column(linkify=True)
+    fqdn = tables.Column(linkify=True)
+    enabled = columns.BooleanColumn()
+    tags = columns.TagColumn(url_name="plugins:netbox_system_services:dynamicdnsrecord_list")
+
+    class Meta(NetBoxTable.Meta):
+        model = DynamicDNSRecord
+        fields = ("pk", "id", "device", "fqdn", "zone", "service", "credential_ref", "check_ip_method", "enabled", "tags", "created", "last_updated")
+        default_columns = ("device", "fqdn", "service", "enabled")

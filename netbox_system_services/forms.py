@@ -7,12 +7,12 @@ from utilities.forms.fields import (
 )
 from utilities.forms.rendering import FieldSet
 from .choices import (
-    DNSResolverModeChoices, SNMPAccessChoices, SNMPVersionChoices, SyslogFacilityChoices,
-    SyslogSeverityChoices, SyslogTransportChoices,
+    DNSForwardBackendChoices, DNSResolverModeChoices, SNMPAccessChoices, SNMPVersionChoices,
+    SyslogFacilityChoices, SyslogSeverityChoices, SyslogTransportChoices,
 )
 from .models import (
-    DNSResolverConfig, NTPConfig, NTPServer, SNMPCommunity, SNMPConfig, SNMPTrapTarget,
-    SyslogConfig, SyslogServer, SystemConfig,
+    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, NTPConfig, NTPServer, SNMPCommunity,
+    SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig, SystemTunable,
 )
 
 
@@ -115,6 +115,40 @@ class DNSResolverConfigForm(NetBoxModelForm):
         fields = ["device", "mode", "nameservers", "search_domains", "tags"]
 
 
+class DnsForwardZoneForm(NetBoxModelForm):
+    device = DynamicModelChoiceField(queryset=Device.objects.all())
+
+    fieldsets = (
+        FieldSet("device", "domain", "server", "port", "backend", "tcp_upstream", "description", name="Forward zone"),
+    )
+
+    class Meta:
+        model = DnsForwardZone
+        fields = ["device", "domain", "server", "port", "backend", "tcp_upstream", "description", "tags"]
+
+
+class SystemTunableForm(NetBoxModelForm):
+    device = DynamicModelChoiceField(queryset=Device.objects.all())
+
+    fieldsets = (FieldSet("device", "name", "value", "description", name="Tunable"),)
+
+    class Meta:
+        model = SystemTunable
+        fields = ["device", "name", "value", "description", "tags"]
+
+
+class DynamicDNSRecordForm(NetBoxModelForm):
+    device = DynamicModelChoiceField(queryset=Device.objects.all())
+
+    fieldsets = (
+        FieldSet("device", "fqdn", "zone", "service", "credential_ref", "check_ip_method", "enabled", name="Dynamic DNS"),
+    )
+
+    class Meta:
+        model = DynamicDNSRecord
+        fields = ["device", "fqdn", "zone", "service", "credential_ref", "check_ip_method", "enabled", "tags"]
+
+
 class SystemConfigFilterForm(NetBoxModelFilterSetForm):
     model = SystemConfig
     device_id = DynamicModelMultipleChoiceField(queryset=Device.objects.all(), required=False, label="Device")
@@ -179,3 +213,24 @@ class DNSResolverConfigFilterForm(NetBoxModelFilterSetForm):
     device_id = DynamicModelMultipleChoiceField(queryset=Device.objects.all(), required=False, label="Device")
     mode = forms.MultipleChoiceField(choices=DNSResolverModeChoices, required=False)
     tag = TagFilterField(DNSResolverConfig)
+
+
+class DnsForwardZoneFilterForm(NetBoxModelFilterSetForm):
+    model = DnsForwardZone
+    device_id = DynamicModelMultipleChoiceField(queryset=Device.objects.all(), required=False, label="Device")
+    backend = forms.MultipleChoiceField(choices=DNSForwardBackendChoices, required=False)
+    tcp_upstream = forms.NullBooleanField(required=False)
+    tag = TagFilterField(DnsForwardZone)
+
+
+class SystemTunableFilterForm(NetBoxModelFilterSetForm):
+    model = SystemTunable
+    device_id = DynamicModelMultipleChoiceField(queryset=Device.objects.all(), required=False, label="Device")
+    tag = TagFilterField(SystemTunable)
+
+
+class DynamicDNSRecordFilterForm(NetBoxModelFilterSetForm):
+    model = DynamicDNSRecord
+    device_id = DynamicModelMultipleChoiceField(queryset=Device.objects.all(), required=False, label="Device")
+    enabled = forms.NullBooleanField(required=False)
+    tag = TagFilterField(DynamicDNSRecord)

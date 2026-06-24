@@ -226,3 +226,78 @@ class DNSResolverConfigDeleteView(generic.ObjectDeleteView):
 class DNSResolverConfigBulkDeleteView(generic.BulkDeleteView):
     queryset = models.DNSResolverConfig.objects.all()
     table = tables.DNSResolverConfigTable
+
+
+class DnsForwardZoneView(generic.ObjectView):
+    queryset = models.DnsForwardZone.objects.all()
+
+
+class DnsForwardZoneListView(generic.ObjectListView):
+    queryset = models.DnsForwardZone.objects.all()
+    table = tables.DnsForwardZoneTable
+    filterset = filtersets.DnsForwardZoneFilterSet
+    filterset_form = forms.DnsForwardZoneFilterForm
+
+
+class DnsForwardZoneEditView(generic.ObjectEditView):
+    queryset = models.DnsForwardZone.objects.all()
+    form = forms.DnsForwardZoneForm
+
+
+class DnsForwardZoneDeleteView(generic.ObjectDeleteView):
+    queryset = models.DnsForwardZone.objects.all()
+
+
+class DnsForwardZoneBulkDeleteView(generic.BulkDeleteView):
+    queryset = models.DnsForwardZone.objects.all()
+    table = tables.DnsForwardZoneTable
+
+
+class SystemTunableView(generic.ObjectView):
+    queryset = models.SystemTunable.objects.all()
+
+
+class SystemTunableListView(generic.ObjectListView):
+    queryset = models.SystemTunable.objects.all()
+    table = tables.SystemTunableTable
+    filterset = filtersets.SystemTunableFilterSet
+    filterset_form = forms.SystemTunableFilterForm
+
+
+class SystemTunableEditView(generic.ObjectEditView):
+    queryset = models.SystemTunable.objects.all()
+    form = forms.SystemTunableForm
+
+
+class SystemTunableDeleteView(generic.ObjectDeleteView):
+    queryset = models.SystemTunable.objects.all()
+
+
+class SystemTunableBulkDeleteView(generic.BulkDeleteView):
+    queryset = models.SystemTunable.objects.all()
+    table = tables.SystemTunableTable
+
+
+class DynamicDNSRecordView(generic.ObjectView):
+    queryset = models.DynamicDNSRecord.objects.all()
+
+
+class DynamicDNSRecordListView(generic.ObjectListView):
+    queryset = models.DynamicDNSRecord.objects.all()
+    table = tables.DynamicDNSRecordTable
+    filterset = filtersets.DynamicDNSRecordFilterSet
+    filterset_form = forms.DynamicDNSRecordFilterForm
+
+
+class DynamicDNSRecordEditView(generic.ObjectEditView):
+    queryset = models.DynamicDNSRecord.objects.all()
+    form = forms.DynamicDNSRecordForm
+
+
+class DynamicDNSRecordDeleteView(generic.ObjectDeleteView):
+    queryset = models.DynamicDNSRecord.objects.all()
+
+
+class DynamicDNSRecordBulkDeleteView(generic.BulkDeleteView):
+    queryset = models.DynamicDNSRecord.objects.all()
+    table = tables.DynamicDNSRecordTable

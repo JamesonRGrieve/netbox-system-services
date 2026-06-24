@@ -4,12 +4,12 @@ from dcim.models import Device
 from django.db.models import Q
 from netbox.filtersets import NetBoxModelFilterSet
 from .choices import (
-    DNSResolverModeChoices, SNMPAccessChoices, SNMPVersionChoices, SyslogFacilityChoices,
-    SyslogSeverityChoices, SyslogTransportChoices,
+    DNSForwardBackendChoices, DNSResolverModeChoices, SNMPAccessChoices, SNMPVersionChoices,
+    SyslogFacilityChoices, SyslogSeverityChoices, SyslogTransportChoices,
 )
 from .models import (
-    DNSResolverConfig, NTPConfig, NTPServer, SNMPCommunity, SNMPConfig, SNMPTrapTarget,
-    SyslogConfig, SyslogServer, SystemConfig,
+    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, NTPConfig, NTPServer, SNMPCommunity,
+    SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig, SystemTunable,
 )
 
 # Explicit FK filters: django-filter does NOT derive `<fk>_id` from a bare FK in Meta.fields,
@@ -138,3 +138,41 @@ class DNSResolverConfigFilterSet(_DeviceFilterMixin):
 
     def search(self, queryset, name, value):
         return queryset.filter(Q(device__name__icontains=value))
+
+
+class DnsForwardZoneFilterSet(_DeviceFilterMixin):
+    backend = django_filters.MultipleChoiceFilter(choices=DNSForwardBackendChoices)
+
+    class Meta:
+        model = DnsForwardZone
+        fields = ["id", "domain", "server", "port", "tcp_upstream", "description"]
+
+    def search(self, queryset, name, value):
+        return queryset.filter(
+            Q(device__name__icontains=value) | Q(domain__icontains=value)
+            | Q(server__icontains=value)
+        )
+
+
+class SystemTunableFilterSet(_DeviceFilterMixin):
+    class Meta:
+        model = SystemTunable
+        fields = ["id", "name", "value", "description"]
+
+    def search(self, queryset, name, value):
+        return queryset.filter(
+            Q(device__name__icontains=value) | Q(name__icontains=value)
+            | Q(value__icontains=value)
+        )
+
+
+class DynamicDNSRecordFilterSet(_DeviceFilterMixin):
+    class Meta:
+        model = DynamicDNSRecord
+        fields = ["id", "fqdn", "zone", "service", "credential_ref", "check_ip_method", "enabled"]
+
+    def search(self, queryset, name, value):
+        return queryset.filter(
+            Q(device__name__icontains=value) | Q(fqdn__icontains=value)
+            | Q(zone__icontains=value)
+        )

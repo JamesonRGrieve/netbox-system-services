@@ -12,8 +12,8 @@ from django.db import models
 from django.urls import reverse
 from netbox.models import NetBoxModel
 from .choices import (
-    DNSResolverModeChoices, SNMPAccessChoices, SNMPVersionChoices, SyslogFacilityChoices,
-    SyslogSeverityChoices, SyslogTransportChoices,
+    DNSForwardBackendChoices, DNSResolverModeChoices, SNMPAccessChoices, SNMPVersionChoices,
+    SyslogFacilityChoices, SyslogSeverityChoices, SyslogTransportChoices,
 )
 
 
@@ -253,3 +253,105 @@ class DNSResolverConfig(NetBoxModel):
 
     def get_mode_color(self):
         return DNSResolverModeChoices.colors.get(self.mode)
+
+
+class DnsForwardZone(NetBoxModel):
+    """A per-device conditional DNS forward zone: queries for ``domain`` are forwarded to an
+    upstream resolver ``server``. Programmed into the device's local resolver daemon
+    (``backend``). Distinct from :class:`DNSResolverConfig` (the device's own stub resolver) —
+    this is the device acting as a forwarder for a specific zone."""
+
+    device = models.ForeignKey(
+        "dcim.Device", on_delete=models.CASCADE, related_name="dns_forward_zones"
+    )
+    domain = models.CharField(max_length=255, help_text="Zone forwarded to the upstream server.")
+    server = models.GenericIPAddressField(help_text="Upstream resolver IP for this zone.")
+    port = models.PositiveSmallIntegerField(default=53)
+    backend = models.CharField(
+        max_length=16, choices=DNSForwardBackendChoices, default=DNSForwardBackendChoices.UNBOUND
+    )
+    tcp_upstream = models.BooleanField(
+        default=False, help_text="Force TCP to the upstream resolver."
+    )
+    description = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ["device", "domain", "server"]
+        verbose_name = "DNS Forward Zone"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["device", "domain", "server"],
+                name="netbox_system_services_dnsforwardzone_unique_device_domain_server",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.device}: {self.domain} → {self.server}:{self.port}"
+
+    def get_absolute_url(self):
+        return reverse("plugins:netbox_system_services:dnsforwardzone", args=[self.pk])
+
+    def get_backend_color(self):
+        return DNSForwardBackendChoices.colors.get(self.backend)
+
+
+class SystemTunable(NetBoxModel):
+    """A per-device kernel tunable (sysctl). ``name`` is the sysctl key (e.g.
+    ``net.inet.ip.forwarding``); ``value`` is the literal value to set."""
+
+    device = models.ForeignKey(
+        "dcim.Device", on_delete=models.CASCADE, related_name="system_tunables"
+    )
+    name = models.CharField(max_length=255, help_text="sysctl key, e.g. net.inet.ip.forwarding.")
+    value = models.CharField(max_length=255, help_text="Literal sysctl value.")
+    description = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ["device", "name"]
+        verbose_name = "System Tunable"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["device", "name"],
+                name="netbox_system_services_systemtunable_unique_device_name",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.device}: {self.name}={self.value}"
+
+    def get_absolute_url(self):
+        return reverse("plugins:netbox_system_services:systemtunable", args=[self.pk])
+
+
+class DynamicDNSRecord(NetBoxModel):
+    """A per-device dynamic-DNS record (ddclient): the device pushes its current public IP to a
+    DNS provider for ``fqdn``. ``credential_ref`` is a LOGICAL key into OpenBao, NEVER the token
+    value — the secret stays in OpenBao."""
+
+    device = models.ForeignKey(
+        "dcim.Device", on_delete=models.CASCADE, related_name="dynamic_dns_records"
+    )
+    fqdn = models.CharField(max_length=255, help_text="Fully-qualified name to keep updated.")
+    zone = models.CharField(max_length=255, blank=True)
+    service = models.CharField(max_length=32, default="cloudflare")
+    credential_ref = models.CharField(
+        max_length=255, blank=True, help_text="OpenBao secret key — NEVER the token value."
+    )
+    check_ip_method = models.CharField(max_length=64, blank=True, default="web")
+    enabled = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["device", "fqdn"]
+        verbose_name = "Dynamic DNS Record"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["device", "fqdn"],
+                name="netbox_system_services_dynamicdnsrecord_unique_device_fqdn",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.device}: {self.fqdn} ({self.service})"
+
+    def get_absolute_url(self):
+        return reverse("plugins:netbox_system_services:dynamicdnsrecord", args=[self.pk])
