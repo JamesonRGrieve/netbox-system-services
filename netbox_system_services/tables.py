@@ -2,8 +2,9 @@
 import django_tables2 as tables
 from netbox.tables import NetBoxTable, columns
 from .models import (
-    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, NTPConfig, NTPServer, SNMPCommunity,
-    SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig, SystemTunable,
+    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, HostMemoryConfig, NTPConfig, NTPServer,
+    SNMPCommunity, SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig,
+    SystemTunable, WakeOnLanConfig, WakeOnLanTarget,
 )
 
 
@@ -13,8 +14,8 @@ class SystemConfigTable(NetBoxTable):
 
     class Meta(NetBoxTable.Meta):
         model = SystemConfig
-        fields = ("pk", "id", "device", "default_gateway", "location", "contact", "tags", "created", "last_updated")
-        default_columns = ("device", "default_gateway", "location", "contact")
+        fields = ("pk", "id", "device", "default_gateway", "ssh_port", "ssh_password_auth", "location", "contact", "tags", "created", "last_updated")
+        default_columns = ("device", "default_gateway", "ssh_port", "location", "contact")
 
 
 class SNMPConfigTable(NetBoxTable):
@@ -61,7 +62,7 @@ class SyslogConfigTable(NetBoxTable):
 
     class Meta(NetBoxTable.Meta):
         model = SyslogConfig
-        fields = ("pk", "id", "device", "severity", "facility", "retention_days", "tags", "created", "last_updated")
+        fields = ("pk", "id", "device", "severity", "facility", "retention_days", "filter_string", "tags", "created", "last_updated")
         default_columns = ("device", "severity", "facility", "retention_days")
 
 
@@ -147,3 +148,39 @@ class DynamicDNSRecordTable(NetBoxTable):
         model = DynamicDNSRecord
         fields = ("pk", "id", "device", "fqdn", "zone", "service", "credential_ref", "check_ip_method", "enabled", "tags", "created", "last_updated")
         default_columns = ("device", "fqdn", "service", "enabled")
+
+
+class HostMemoryConfigTable(NetBoxTable):
+    device = tables.Column(linkify=True)
+    zram_algorithm = columns.ChoiceFieldColumn()
+    tags = columns.TagColumn(url_name="plugins:netbox_system_services:hostmemoryconfig_list")
+
+    class Meta(NetBoxTable.Meta):
+        model = HostMemoryConfig
+        fields = ("pk", "id", "device", "swappiness", "swap_file_size_mb", "zram_percent", "zram_size_mb", "zram_algorithm", "zram_priority", "tags", "created", "last_updated")
+        default_columns = ("device", "swappiness", "swap_file_size_mb", "zram_percent", "zram_algorithm")
+
+
+class WakeOnLanConfigTable(NetBoxTable):
+    device = tables.Column(linkify=True)
+    interface = tables.Column(linkify=True)
+    enabled = columns.BooleanColumn()
+    mode = columns.ChoiceFieldColumn()
+    is_waker = columns.BooleanColumn()
+    tags = columns.TagColumn(url_name="plugins:netbox_system_services:wakeonlanconfig_list")
+
+    class Meta(NetBoxTable.Meta):
+        model = WakeOnLanConfig
+        fields = ("pk", "id", "device", "enabled", "interface", "mode", "is_waker", "tags", "created", "last_updated")
+        default_columns = ("device", "enabled", "interface", "mode", "is_waker")
+
+
+class WakeOnLanTargetTable(NetBoxTable):
+    config = tables.Column(linkify=True)
+    target_device = tables.Column(linkify=True)
+    tags = columns.TagColumn(url_name="plugins:netbox_system_services:wakeonlantarget_list")
+
+    class Meta(NetBoxTable.Meta):
+        model = WakeOnLanTarget
+        fields = ("pk", "id", "config", "target_device", "tags", "created", "last_updated")
+        default_columns = ("config", "target_device")

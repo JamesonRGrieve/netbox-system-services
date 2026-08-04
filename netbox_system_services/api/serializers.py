@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-from dcim.api.serializers import DeviceSerializer
+from dcim.api.serializers import DeviceSerializer, InterfaceSerializer
 from netbox.api.serializers import NetBoxModelSerializer
 from rest_framework import serializers
 from ..models import (
-    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, NTPConfig, NTPServer, SNMPCommunity,
-    SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig, SystemTunable,
+    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, HostMemoryConfig, NTPConfig, NTPServer,
+    SNMPCommunity, SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig,
+    SystemTunable, WakeOnLanConfig, WakeOnLanTarget,
 )
 
 
@@ -16,6 +17,7 @@ class SystemConfigSerializer(NetBoxModelSerializer):
         model = SystemConfig
         fields = [
             "id", "url", "display", "device", "default_gateway", "location", "contact",
+            "ssh_port", "ssh_password_auth", "ssh_allow_users",
             "tags", "custom_fields", "created", "last_updated",
         ]
         brief_fields = ["id", "url", "display", "device"]
@@ -68,7 +70,7 @@ class SyslogConfigSerializer(NetBoxModelSerializer):
         model = SyslogConfig
         fields = [
             "id", "url", "display", "device", "severity", "facility", "retention_days",
-            "tags", "custom_fields", "created", "last_updated",
+            "filter_string", "tags", "custom_fields", "created", "last_updated",
         ]
         brief_fields = ["id", "url", "display", "device", "severity"]
 
@@ -162,3 +164,45 @@ class DynamicDNSRecordSerializer(NetBoxModelSerializer):
             "check_ip_method", "enabled", "tags", "custom_fields", "created", "last_updated",
         ]
         brief_fields = ["id", "url", "display", "device", "fqdn", "service"]
+
+
+class HostMemoryConfigSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:hostmemoryconfig-detail")
+    device = DeviceSerializer(nested=True)
+
+    class Meta:
+        model = HostMemoryConfig
+        fields = [
+            "id", "url", "display", "device", "swappiness", "swap_file_size_mb", "zram_percent",
+            "zram_size_mb", "zram_algorithm", "zram_priority",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "device"]
+
+
+class WakeOnLanConfigSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:wakeonlanconfig-detail")
+    device = DeviceSerializer(nested=True)
+    interface = InterfaceSerializer(nested=True, required=False, allow_null=True)
+
+    class Meta:
+        model = WakeOnLanConfig
+        fields = [
+            "id", "url", "display", "device", "enabled", "interface", "mode", "is_waker",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "device", "is_waker"]
+
+
+class WakeOnLanTargetSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:wakeonlantarget-detail")
+    config = WakeOnLanConfigSerializer(nested=True)
+    target_device = DeviceSerializer(nested=True)
+
+    class Meta:
+        model = WakeOnLanTarget
+        fields = [
+            "id", "url", "display", "config", "target_device",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "config", "target_device"]

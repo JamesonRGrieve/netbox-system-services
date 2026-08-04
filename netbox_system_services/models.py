@@ -8,18 +8,21 @@ SECRET POLICY: SNMP community strings and trap-target credentials are NEVER stor
 community/trap models keep only a *logical name/ref* that keys the actual secret in OpenBao.
 """
 from django.contrib.postgres.fields import ArrayField
+from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator
 from django.db import models
 from django.urls import reverse
 from netbox.models import NetBoxModel
 from .choices import (
     DNSForwardBackendChoices, DNSResolverModeChoices, SNMPAccessChoices, SNMPVersionChoices,
-    SyslogFacilityChoices, SyslogSeverityChoices, SyslogTransportChoices,
+    SyslogFacilityChoices, SyslogSeverityChoices, SyslogTransportChoices, WakeOnLanModeChoices,
+    ZramAlgorithmChoices,
 )
 
 
 class SystemConfig(NetBoxModel):
-    """Per-device system identity: SNMP ``sysLocation``/``sysContact`` and the management
-    default gateway. ``hostname`` is intentionally NOT stored — it is ``device.name``."""
+    """Per-device system identity and management-plane SSH/network config.
+    ``hostname`` is intentionally NOT stored — it is ``device.name``."""
 
     device = models.OneToOneField(
         "dcim.Device", on_delete=models.CASCADE, related_name="system_config"
@@ -29,6 +32,16 @@ class SystemConfig(NetBoxModel):
     )
     location = models.CharField(max_length=255, blank=True, help_text="SNMP sysLocation.")
     contact = models.CharField(max_length=255, blank=True, help_text="SNMP sysContact.")
+    ssh_port = models.PositiveIntegerField(
+        default=22, help_text="SSHd listen port."
+    )
+    ssh_password_auth = models.BooleanField(
+        default=True, help_text="Allow SSH password authentication."
+    )
+    ssh_allow_users = ArrayField(
+        models.CharField(max_length=128), default=list, blank=True,
+        help_text="SSHd AllowUsers list (empty = unrestricted)."
+    )
 
     class Meta:
         ordering = ["device"]
@@ -138,6 +151,9 @@ class SyslogConfig(NetBoxModel):
         max_length=8, choices=SyslogFacilityChoices, default=SyslogFacilityChoices.USER
     )
     retention_days = models.PositiveIntegerField(default=7, help_text="Local log retention (days).")
+    filter_string = models.TextField(
+        blank=True, help_text="Syslog filter expression (platform-specific, e.g. rsyslog property-based filter)."
+    )
 
     class Meta:
         ordering = ["device"]
@@ -355,3 +371,121 @@ class DynamicDNSRecord(NetBoxModel):
 
     def get_absolute_url(self):
         return reverse("plugins:netbox_system_services:dynamicdnsrecord", args=[self.pk])
+
+
+class HostMemoryConfig(NetBoxModel):
+    """Per-device host memory management: kernel ``vm.swappiness``, a traditional ``/swapfile``,
+    and a compressed ``zram`` swap device. Every config field is nullable/blank — an unset field
+    means *unmanaged* (the subset semantics the sibling configs use). Maps 1:1 to the memory
+    attributes of the ``proxmox_host_config`` tofu resource. ``zram_percent`` and ``zram_size_mb``
+    are mutually exclusive (size expressed either relative to RAM or absolute, never both)."""
+
+    device = models.OneToOneField(
+        "dcim.Device", on_delete=models.CASCADE, related_name="host_memory_config"
+    )
+    swappiness = models.PositiveSmallIntegerField(
+        null=True, blank=True, validators=[MaxValueValidator(200)],
+        help_text="vm.swappiness (0–200); unset = unmanaged.",
+    )
+    swap_file_size_mb = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Traditional /swapfile size in MiB (0 = removed)."
+    )
+    zram_percent = models.PositiveSmallIntegerField(
+        null=True, blank=True, validators=[MaxValueValidator(100)],
+        help_text="zram size as a percentage of RAM (mutually exclusive with zram_size_mb).",
+    )
+    zram_size_mb = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Absolute zram size in MiB (mutually exclusive with zram_percent).",
+    )
+    zram_algorithm = models.CharField(
+        max_length=20, blank=True, choices=ZramAlgorithmChoices, help_text="zram compression algorithm."
+    )
+    zram_priority = models.SmallIntegerField(
+        null=True, blank=True, help_text="zram swap priority (provider default 100 when unset)."
+    )
+
+    class Meta:
+        ordering = ["device"]
+        verbose_name = "Host Memory Config"
+
+    def __str__(self):
+        return f"Host Memory: {self.device}"
+
+    def get_absolute_url(self):
+        return reverse("plugins:netbox_system_services:hostmemoryconfig", args=[self.pk])
+
+    def clean(self):
+        super().clean()
+        if self.zram_percent is not None and self.zram_size_mb is not None:
+            raise ValidationError(
+                "zram_percent and zram_size_mb are mutually exclusive — set at most one."
+            )
+
+
+class WakeOnLanConfig(NetBoxModel):
+    """Per-device Wake-on-LAN posture with two independent roles. (1) *Be woken*: this host's NIC
+    is armed to accept magic packets — ``enabled`` + the wake ``interface`` + the ethtool ``mode``;
+    the magic-packet MAC target is read LIVE from ``interface`` and is NEVER stored here. (2) *Waker*:
+    ``is_waker`` marks this host as one that SENDS magic packets to wake others, whose targets hang
+    off it as :class:`WakeOnLanTarget` child rows."""
+
+    device = models.OneToOneField(
+        "dcim.Device", on_delete=models.CASCADE, related_name="wake_on_lan_config"
+    )
+    enabled = models.BooleanField(default=False, help_text="WoL armed on this host's NIC (be-woken).")
+    interface = models.ForeignKey(
+        "dcim.Interface", on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+        help_text="Wake NIC; its MAC is the magic-packet target (read live, never stored here).",
+    )
+    mode = models.CharField(
+        max_length=10, choices=WakeOnLanModeChoices, default=WakeOnLanModeChoices.MAGIC,
+        help_text="ethtool wol mode.",
+    )
+    is_waker = models.BooleanField(
+        default=False, help_text="This host sends magic packets to wake others."
+    )
+
+    class Meta:
+        ordering = ["device"]
+        verbose_name = "Wake-on-LAN Config"
+
+    def __str__(self):
+        return f"WoL: {self.device}"
+
+    def get_absolute_url(self):
+        return reverse("plugins:netbox_system_services:wakeonlanconfig", args=[self.pk])
+
+    def clean(self):
+        super().clean()
+        if self.interface is not None and self.interface.device_id != self.device_id:
+            raise ValidationError("The wake interface must belong to this device.")
+
+
+class WakeOnLanTarget(NetBoxModel):
+    """A host that a waker (:class:`WakeOnLanConfig` with ``is_waker=True``) wakes. Child row hanging
+    off the waker's config; ``target_device`` is the woken host (its wake MAC is read from that
+    device's own :class:`WakeOnLanConfig` interface, never duplicated here)."""
+
+    config = models.ForeignKey(
+        WakeOnLanConfig, on_delete=models.CASCADE, related_name="targets"
+    )
+    target_device = models.ForeignKey(
+        "dcim.Device", on_delete=models.CASCADE, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["config", "target_device"]
+        verbose_name = "Wake-on-LAN Target"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["config", "target_device"],
+                name="netbox_system_services_wakeonlantarget_unique_config_target",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.config.device} -> {self.target_device}"
+
+    def get_absolute_url(self):
+        return reverse("plugins:netbox_system_services:wakeonlantarget", args=[self.pk])
