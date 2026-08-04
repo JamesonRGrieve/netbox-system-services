@@ -3,7 +3,8 @@ from dcim.api.serializers import DeviceSerializer, InterfaceSerializer
 from netbox.api.serializers import NetBoxModelSerializer
 from rest_framework import serializers
 from ..models import (
-    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, HostMemoryConfig, NTPConfig, NTPServer,
+    DeviceCLILine, DnsForwardZone, DnsHostAlias, DnsmasqHost, DNSResolverConfig,
+    DynamicDNSRecord, HostMemoryConfig, NTPConfig, NTPServer,
     SNMPCommunity, SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig,
     SystemTunable, WakeOnLanConfig, WakeOnLanTarget,
 )
@@ -18,6 +19,7 @@ class SystemConfigSerializer(NetBoxModelSerializer):
         fields = [
             "id", "url", "display", "device", "default_gateway", "location", "contact",
             "ssh_port", "ssh_password_auth", "ssh_allow_users",
+            "ssh_proxy_host", "ssh_proxy_port", "ssh_proxy_user", "ssh_proxy_identity",
             "tags", "custom_fields", "created", "last_updated",
         ]
         brief_fields = ["id", "url", "display", "device"]
@@ -206,3 +208,42 @@ class WakeOnLanTargetSerializer(NetBoxModelSerializer):
             "tags", "custom_fields", "created", "last_updated",
         ]
         brief_fields = ["id", "url", "display", "config", "target_device"]
+
+
+class DnsHostAliasSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:dnshostalias-detail")
+    device = DeviceSerializer(nested=True)
+
+    class Meta:
+        model = DnsHostAlias
+        fields = [
+            "id", "url", "display", "device", "hostname", "target", "description",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "device", "hostname", "target"]
+
+
+class DnsmasqHostSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:dnsmasqhost-detail")
+    device = DeviceSerializer(nested=True)
+
+    class Meta:
+        model = DnsmasqHost
+        fields = [
+            "id", "url", "display", "device", "hostname", "ip_address", "description",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "device", "hostname", "ip_address"]
+
+
+class DeviceCLILineSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:devicecliline-detail")
+    device = DeviceSerializer(nested=True)
+
+    class Meta:
+        model = DeviceCLILine
+        fields = [
+            "id", "url", "display", "device", "line", "weight", "description",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "device", "weight"]

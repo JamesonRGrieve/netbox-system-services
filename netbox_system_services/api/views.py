@@ -2,14 +2,18 @@
 from netbox.api.viewsets import NetBoxModelViewSet
 from .. import filtersets
 from ..models import (
-    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, NTPConfig, NTPServer, SNMPCommunity,
-    SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig, SystemTunable,
+    DeviceCLILine, DnsForwardZone, DnsHostAlias, DnsmasqHost, DNSResolverConfig,
+    DynamicDNSRecord, HostMemoryConfig, NTPConfig, NTPServer,
+    SNMPCommunity, SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig,
+    SystemTunable, WakeOnLanConfig, WakeOnLanTarget,
 )
 from .serializers import (
-    DnsForwardZoneSerializer, DNSResolverConfigSerializer, DynamicDNSRecordSerializer,
-    NTPConfigSerializer, NTPServerSerializer, SNMPCommunitySerializer, SNMPConfigSerializer,
-    SNMPTrapTargetSerializer, SyslogConfigSerializer, SyslogServerSerializer,
-    SystemConfigSerializer, SystemTunableSerializer,
+    DeviceCLILineSerializer, DnsForwardZoneSerializer, DnsHostAliasSerializer,
+    DnsmasqHostSerializer, DNSResolverConfigSerializer, DynamicDNSRecordSerializer,
+    HostMemoryConfigSerializer, NTPConfigSerializer, NTPServerSerializer, SNMPCommunitySerializer,
+    SNMPConfigSerializer, SNMPTrapTargetSerializer, SyslogConfigSerializer, SyslogServerSerializer,
+    SystemConfigSerializer, SystemTunableSerializer, WakeOnLanConfigSerializer,
+    WakeOnLanTargetSerializer,
 )
 
 
@@ -83,3 +87,39 @@ class DynamicDNSRecordViewSet(NetBoxModelViewSet):
     queryset = DynamicDNSRecord.objects.prefetch_related("device", "tags")
     serializer_class = DynamicDNSRecordSerializer
     filterset_class = filtersets.DynamicDNSRecordFilterSet
+
+
+class HostMemoryConfigViewSet(NetBoxModelViewSet):
+    queryset = HostMemoryConfig.objects.prefetch_related("device", "tags")
+    serializer_class = HostMemoryConfigSerializer
+    filterset_class = filtersets.HostMemoryConfigFilterSet
+
+
+class WakeOnLanConfigViewSet(NetBoxModelViewSet):
+    queryset = WakeOnLanConfig.objects.prefetch_related("device", "interface", "tags")
+    serializer_class = WakeOnLanConfigSerializer
+    filterset_class = filtersets.WakeOnLanConfigFilterSet
+
+
+class WakeOnLanTargetViewSet(NetBoxModelViewSet):
+    queryset = WakeOnLanTarget.objects.prefetch_related("config", "target_device", "tags")
+    serializer_class = WakeOnLanTargetSerializer
+    filterset_class = filtersets.WakeOnLanTargetFilterSet
+
+
+class DnsHostAliasViewSet(NetBoxModelViewSet):
+    queryset = DnsHostAlias.objects.prefetch_related("device", "tags")
+    serializer_class = DnsHostAliasSerializer
+    filterset_class = filtersets.DnsHostAliasFilterSet
+
+
+class DnsmasqHostViewSet(NetBoxModelViewSet):
+    queryset = DnsmasqHost.objects.prefetch_related("device", "tags")
+    serializer_class = DnsmasqHostSerializer
+    filterset_class = filtersets.DnsmasqHostFilterSet
+
+
+class DeviceCLILineViewSet(NetBoxModelViewSet):
+    queryset = DeviceCLILine.objects.prefetch_related("device", "tags")
+    serializer_class = DeviceCLILineSerializer
+    filterset_class = filtersets.DeviceCLILineFilterSet

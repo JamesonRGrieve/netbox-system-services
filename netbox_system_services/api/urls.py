@@ -17,5 +17,11 @@ router.register("dns-resolver-config", views.DNSResolverConfigViewSet)
 router.register("dns-forward-zones", views.DnsForwardZoneViewSet)
 router.register("system-tunables", views.SystemTunableViewSet)
 router.register("dynamic-dns-records", views.DynamicDNSRecordViewSet)
+router.register("host-memory-config", views.HostMemoryConfigViewSet)
+router.register("wake-on-lan-config", views.WakeOnLanConfigViewSet)
+router.register("wake-on-lan-targets", views.WakeOnLanTargetViewSet)
+router.register("dns-host-aliases", views.DnsHostAliasViewSet)
+router.register("dnsmasq-hosts", views.DnsmasqHostViewSet)
+router.register("device-cli-lines", views.DeviceCLILineViewSet)
 
 urlpatterns = router.urls

@@ -42,6 +42,18 @@ class SystemConfig(NetBoxModel):
         models.CharField(max_length=128), default=list, blank=True,
         help_text="SSHd AllowUsers list (empty = unrestricted)."
     )
+    ssh_proxy_host = models.CharField(
+        max_length=255, blank=True, help_text="SSH ProxyJump host (empty = direct connection)."
+    )
+    ssh_proxy_port = models.PositiveIntegerField(
+        default=22, help_text="SSH ProxyJump port."
+    )
+    ssh_proxy_user = models.CharField(
+        max_length=128, blank=True, help_text="SSH ProxyJump user."
+    )
+    ssh_proxy_identity = models.CharField(
+        max_length=255, blank=True, help_text="OpenBao KV path for the ProxyJump private key."
+    )
 
     class Meta:
         ordering = ["device"]
@@ -489,3 +501,79 @@ class WakeOnLanTarget(NetBoxModel):
 
     def get_absolute_url(self):
         return reverse("plugins:netbox_system_services:wakeonlantarget", args=[self.pk])
+
+
+class DnsHostAlias(NetBoxModel):
+    """A per-device DNS host override / alias (Unbound host_override or dnsmasq address=)."""
+
+    device = models.ForeignKey(
+        "dcim.Device", on_delete=models.CASCADE, related_name="dns_host_aliases"
+    )
+    hostname = models.CharField(max_length=255, help_text="FQDN or short hostname to override.")
+    target = models.GenericIPAddressField(help_text="IP address the hostname resolves to.")
+    description = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ["device", "hostname"]
+        verbose_name = "DNS Host Alias"
+        verbose_name_plural = "DNS Host Aliases"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["device", "hostname"],
+                name="netbox_system_services_dnshostalias_unique_device_hostname",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.device}: {self.hostname} -> {self.target}"
+
+    def get_absolute_url(self):
+        return reverse("plugins:netbox_system_services:dnshostalias", args=[self.pk])
+
+
+class DnsmasqHost(NetBoxModel):
+    """A per-device dnsmasq static host entry (--host-record)."""
+
+    device = models.ForeignKey(
+        "dcim.Device", on_delete=models.CASCADE, related_name="dnsmasq_hosts"
+    )
+    hostname = models.CharField(max_length=255, help_text="Hostname for the dnsmasq host record.")
+    ip_address = models.GenericIPAddressField(help_text="IP address for the host record.")
+    description = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ["device", "hostname"]
+        verbose_name = "Dnsmasq Host"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["device", "hostname"],
+                name="netbox_system_services_dnsmasqhost_unique_device_hostname",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.device}: {self.hostname} -> {self.ip_address}"
+
+    def get_absolute_url(self):
+        return reverse("plugins:netbox_system_services:dnsmasqhost", args=[self.pk])
+
+
+class DeviceCLILine(NetBoxModel):
+    """A per-device raw CLI configuration line (platform-specific escape hatch)."""
+
+    device = models.ForeignKey(
+        "dcim.Device", on_delete=models.CASCADE, related_name="cli_lines"
+    )
+    line = models.TextField(help_text="Raw CLI line to include in the device config.")
+    weight = models.PositiveIntegerField(default=100, help_text="Ordering weight (lower = earlier).")
+    description = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ["device", "weight"]
+        verbose_name = "Device CLI Line"
+
+    def __str__(self):
+        return f"{self.device}: {self.line[:60]}"
+
+    def get_absolute_url(self):
+        return reverse("plugins:netbox_system_services:devicecliline", args=[self.pk])

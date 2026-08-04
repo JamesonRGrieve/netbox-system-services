@@ -5,11 +5,14 @@ from django.db.models import Q
 from netbox.filtersets import NetBoxModelFilterSet
 from .choices import (
     DNSForwardBackendChoices, DNSResolverModeChoices, SNMPAccessChoices, SNMPVersionChoices,
-    SyslogFacilityChoices, SyslogSeverityChoices, SyslogTransportChoices,
+    SyslogFacilityChoices, SyslogSeverityChoices, SyslogTransportChoices, WakeOnLanModeChoices,
+    ZramAlgorithmChoices,
 )
 from .models import (
-    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, NTPConfig, NTPServer, SNMPCommunity,
-    SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig, SystemTunable,
+    DeviceCLILine, DnsForwardZone, DnsHostAlias, DnsmasqHost, DNSResolverConfig,
+    DynamicDNSRecord, HostMemoryConfig, NTPConfig, NTPServer,
+    SNMPCommunity, SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig,
+    SystemTunable, WakeOnLanConfig, WakeOnLanTarget,
 )
 
 # Explicit FK filters: django-filter does NOT derive `<fk>_id` from a bare FK in Meta.fields,
@@ -176,3 +179,82 @@ class DynamicDNSRecordFilterSet(_DeviceFilterMixin):
             Q(device__name__icontains=value) | Q(fqdn__icontains=value)
             | Q(zone__icontains=value)
         )
+
+
+class HostMemoryConfigFilterSet(_DeviceFilterMixin):
+    zram_algorithm = django_filters.MultipleChoiceFilter(choices=ZramAlgorithmChoices)
+
+    class Meta:
+        model = HostMemoryConfig
+        fields = ["id", "swappiness", "swap_file_size_mb", "zram_percent", "zram_size_mb", "zram_priority"]
+
+    def search(self, queryset, name, value):
+        return queryset.filter(Q(device__name__icontains=value))
+
+
+class WakeOnLanConfigFilterSet(_DeviceFilterMixin):
+    mode = django_filters.MultipleChoiceFilter(choices=WakeOnLanModeChoices)
+
+    class Meta:
+        model = WakeOnLanConfig
+        fields = ["id", "enabled", "is_waker"]
+
+    def search(self, queryset, name, value):
+        return queryset.filter(Q(device__name__icontains=value))
+
+
+class WakeOnLanTargetFilterSet(NetBoxModelFilterSet):
+    config_id = django_filters.ModelMultipleChoiceFilter(
+        field_name="config", queryset=WakeOnLanConfig.objects.all(), label="WoL Config (ID)"
+    )
+    target_device_id = django_filters.ModelMultipleChoiceFilter(
+        field_name="target_device", queryset=Device.objects.all(), label="Target Device (ID)"
+    )
+
+    class Meta:
+        model = WakeOnLanTarget
+        fields = ["id"]
+
+    def search(self, queryset, name, value):
+        return queryset.filter(
+            Q(config__device__name__icontains=value) | Q(target_device__name__icontains=value)
+        )
+
+
+class DnsHostAliasFilterSet(NetBoxModelFilterSet):
+    device_id = django_filters.ModelMultipleChoiceFilter(
+        field_name="device", queryset=Device.objects.all(), label="Device (ID)"
+    )
+
+    class Meta:
+        model = DnsHostAlias
+        fields = ["id"]
+
+    def search(self, queryset, name, value):
+        return queryset.filter(Q(hostname__icontains=value) | Q(device__name__icontains=value))
+
+
+class DnsmasqHostFilterSet(NetBoxModelFilterSet):
+    device_id = django_filters.ModelMultipleChoiceFilter(
+        field_name="device", queryset=Device.objects.all(), label="Device (ID)"
+    )
+
+    class Meta:
+        model = DnsmasqHost
+        fields = ["id"]
+
+    def search(self, queryset, name, value):
+        return queryset.filter(Q(hostname__icontains=value) | Q(device__name__icontains=value))
+
+
+class DeviceCLILineFilterSet(NetBoxModelFilterSet):
+    device_id = django_filters.ModelMultipleChoiceFilter(
+        field_name="device", queryset=Device.objects.all(), label="Device (ID)"
+    )
+
+    class Meta:
+        model = DeviceCLILine
+        fields = ["id"]
+
+    def search(self, queryset, name, value):
+        return queryset.filter(Q(line__icontains=value) | Q(device__name__icontains=value))
