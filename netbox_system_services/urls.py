@@ -54,4 +54,13 @@ urlpatterns = [
     *_routes("dynamic-dns-records", "dynamicdnsrecord", models.DynamicDNSRecord,
              views.DynamicDNSRecordListView, views.DynamicDNSRecordEditView, views.DynamicDNSRecordView,
              views.DynamicDNSRecordDeleteView, views.DynamicDNSRecordBulkDeleteView),
+    *_routes("host-memory-config", "hostmemoryconfig", models.HostMemoryConfig,
+             views.HostMemoryConfigListView, views.HostMemoryConfigEditView, views.HostMemoryConfigView,
+             views.HostMemoryConfigDeleteView, views.HostMemoryConfigBulkDeleteView),
+    *_routes("wake-on-lan-config", "wakeonlanconfig", models.WakeOnLanConfig,
+             views.WakeOnLanConfigListView, views.WakeOnLanConfigEditView, views.WakeOnLanConfigView,
+             views.WakeOnLanConfigDeleteView, views.WakeOnLanConfigBulkDeleteView),
+    *_routes("wake-on-lan-targets", "wakeonlantarget", models.WakeOnLanTarget,
+             views.WakeOnLanTargetListView, views.WakeOnLanTargetEditView, views.WakeOnLanTargetView,
+             views.WakeOnLanTargetDeleteView, views.WakeOnLanTargetBulkDeleteView),
 ]

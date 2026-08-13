@@ -14,8 +14,8 @@ class SystemConfigTable(NetBoxTable):
 
     class Meta(NetBoxTable.Meta):
         model = SystemConfig
-        fields = ("pk", "id", "device", "default_gateway", "ssh_port", "ssh_password_auth", "location", "contact", "tags", "created", "last_updated")
-        default_columns = ("device", "default_gateway", "ssh_port", "location", "contact")
+        fields = ("pk", "id", "device", "fqdn", "default_gateway", "ssh_port", "ssh_password_auth", "location", "contact", "tags", "created", "last_updated")
+        default_columns = ("device", "fqdn", "default_gateway", "ssh_port", "location", "contact")
 
 
 class SNMPConfigTable(NetBoxTable):

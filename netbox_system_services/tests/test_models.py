@@ -1,16 +1,19 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Model tests against a real DB (no mocks): creation, str, constraints, FK/OneToOne behaviour."""
+from dcim.models import Interface
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.utils import IntegrityError
 from django.test import TestCase
 from utilities.testing import create_test_device
 from netbox_system_services.choices import (
     DNSForwardBackendChoices, DNSResolverModeChoices, SNMPAccessChoices, SNMPVersionChoices,
-    SyslogSeverityChoices, SyslogTransportChoices,
+    SyslogSeverityChoices, SyslogTransportChoices, WakeOnLanModeChoices, ZramAlgorithmChoices,
 )
 from netbox_system_services.models import (
-    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, NTPConfig, NTPServer, SNMPCommunity,
-    SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig, SystemTunable,
+    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, HostMemoryConfig, NTPConfig, NTPServer,
+    SNMPCommunity, SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig,
+    SystemTunable, WakeOnLanConfig, WakeOnLanTarget,
 )
 
 
@@ -213,3 +216,102 @@ class DynamicDNSRecordModelTest(TestCase):
         DynamicDNSRecord.objects.create(device=self.device, fqdn="dup.example")
         with self.assertRaises(IntegrityError), transaction.atomic():
             DynamicDNSRecord.objects.create(device=self.device, fqdn="dup.example")
+
+
+class HostMemoryConfigModelTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.device = create_test_device("dev1")
+
+    def test_create_str_and_url(self):
+        c = HostMemoryConfig.objects.create(
+            device=self.device, swappiness=10, swap_file_size_mb=2048,
+            zram_percent=25, zram_algorithm=ZramAlgorithmChoices.ZSTD, zram_priority=100,
+        )
+        self.assertEqual(str(c), f"Host Memory: {self.device}")
+        self.assertIn("/plugins/system-services/host-memory-config/", c.get_absolute_url())
+        self.assertEqual(c.swappiness, 10)
+        self.assertEqual(c.zram_algorithm, "zstd")
+
+    def test_defaults_all_unset(self):
+        """Every config field is nullable/blank — unset means 'unmanaged'."""
+        c = HostMemoryConfig.objects.create(device=self.device)
+        self.assertIsNone(c.swappiness)
+        self.assertIsNone(c.swap_file_size_mb)
+        self.assertIsNone(c.zram_percent)
+        self.assertIsNone(c.zram_size_mb)
+        self.assertEqual(c.zram_algorithm, "")
+        self.assertIsNone(c.zram_priority)
+
+    def test_one_per_device(self):
+        HostMemoryConfig.objects.create(device=self.device)
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            HostMemoryConfig.objects.create(device=self.device)
+
+    def test_zram_percent_and_size_mutually_exclusive(self):
+        c = HostMemoryConfig(device=self.device, zram_percent=50, zram_size_mb=1024)
+        with self.assertRaises(ValidationError):
+            c.clean()
+
+    def test_zram_single_side_is_valid(self):
+        HostMemoryConfig(device=self.device, zram_percent=50).clean()
+        HostMemoryConfig(device=self.device, zram_size_mb=1024).clean()
+
+    def test_swappiness_upper_bound_enforced(self):
+        with self.assertRaises(ValidationError):
+            HostMemoryConfig(device=self.device, swappiness=201).full_clean()
+
+    def test_zram_percent_upper_bound_enforced(self):
+        with self.assertRaises(ValidationError):
+            HostMemoryConfig(device=self.device, zram_percent=101).full_clean()
+
+
+class WakeOnLanModelTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.device = create_test_device("dev1")
+        cls.cfg = WakeOnLanConfig.objects.create(device=cls.device, enabled=True, is_waker=True)
+
+    def test_config_defaults_str_and_url(self):
+        self.assertEqual(self.cfg.mode, WakeOnLanModeChoices.MAGIC)
+        self.assertTrue(self.cfg.enabled)
+        self.assertTrue(self.cfg.is_waker)
+        self.assertIsNone(self.cfg.interface)
+        self.assertEqual(str(self.cfg), f"WoL: {self.device}")
+        self.assertIn("/plugins/system-services/wake-on-lan-config/", self.cfg.get_absolute_url())
+
+    def test_be_woken_off_by_default(self):
+        c = WakeOnLanConfig.objects.create(device=create_test_device("dev-off"))
+        self.assertFalse(c.enabled)
+        self.assertFalse(c.is_waker)
+        self.assertEqual(c.mode, WakeOnLanModeChoices.MAGIC)
+
+    def test_one_per_device(self):
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            WakeOnLanConfig.objects.create(device=self.device)
+
+    def test_interface_must_belong_to_device(self):
+        other = create_test_device("dev-other")
+        iface = Interface.objects.create(device=other, name="eth0", type="1000base-t")
+        c = WakeOnLanConfig(device=create_test_device("dev-iface"), interface=iface)
+        with self.assertRaises(ValidationError):
+            c.clean()
+
+    def test_interface_on_same_device_is_valid(self):
+        dev = create_test_device("dev-ok")
+        iface = Interface.objects.create(device=dev, name="eth0", type="1000base-t")
+        WakeOnLanConfig(device=dev, interface=iface, mode=WakeOnLanModeChoices.BROADCAST).clean()
+
+    def test_target_str_url_and_cascade(self):
+        target = create_test_device("waketarget")
+        t = WakeOnLanTarget.objects.create(config=self.cfg, target_device=target)
+        self.assertEqual(str(t), f"{self.device} -> {target}")
+        self.assertIn("/plugins/system-services/wake-on-lan-targets/", t.get_absolute_url())
+        self.cfg.delete()
+        self.assertEqual(WakeOnLanTarget.objects.count(), 0)
+
+    def test_target_unique_per_config(self):
+        target = create_test_device("dup-target")
+        WakeOnLanTarget.objects.create(config=self.cfg, target_device=target)
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            WakeOnLanTarget.objects.create(config=self.cfg, target_device=target)

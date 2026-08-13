@@ -4,17 +4,18 @@ from django.test import TestCase
 from utilities.testing import create_test_device
 from netbox_system_services.choices import (
     DNSForwardBackendChoices, DNSResolverModeChoices, SNMPAccessChoices, SNMPVersionChoices,
-    SyslogSeverityChoices, SyslogTransportChoices,
+    SyslogSeverityChoices, SyslogTransportChoices, WakeOnLanModeChoices, ZramAlgorithmChoices,
 )
 from netbox_system_services.filtersets import (
     DnsForwardZoneFilterSet, DNSResolverConfigFilterSet, DynamicDNSRecordFilterSet,
-    NTPConfigFilterSet, NTPServerFilterSet, SNMPCommunityFilterSet, SNMPConfigFilterSet,
-    SNMPTrapTargetFilterSet, SyslogConfigFilterSet, SyslogServerFilterSet, SystemConfigFilterSet,
-    SystemTunableFilterSet,
+    HostMemoryConfigFilterSet, NTPConfigFilterSet, NTPServerFilterSet, SNMPCommunityFilterSet,
+    SNMPConfigFilterSet, SNMPTrapTargetFilterSet, SyslogConfigFilterSet, SyslogServerFilterSet,
+    SystemConfigFilterSet, SystemTunableFilterSet, WakeOnLanConfigFilterSet, WakeOnLanTargetFilterSet,
 )
 from netbox_system_services.models import (
-    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, NTPConfig, NTPServer, SNMPCommunity,
-    SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig, SystemTunable,
+    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, HostMemoryConfig, NTPConfig, NTPServer,
+    SNMPCommunity, SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig,
+    SystemTunable, WakeOnLanConfig, WakeOnLanTarget,
 )
 
 
@@ -210,3 +211,78 @@ class DynamicDNSRecordFilterSetTest(TestCase):
 
     def test_search(self):
         self.assertEqual(DynamicDNSRecordFilterSet({"q": "vpn.example"}, self.queryset).qs.count(), 1)
+
+
+class HostMemoryConfigFilterSetTest(TestCase):
+    queryset = HostMemoryConfig.objects.all()
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.d1 = create_test_device("dev1")
+        cls.d2 = create_test_device("dev2")
+        HostMemoryConfig.objects.create(device=cls.d1, swappiness=10, zram_algorithm=ZramAlgorithmChoices.ZSTD)
+        HostMemoryConfig.objects.create(device=cls.d2, swappiness=60, zram_algorithm=ZramAlgorithmChoices.LZ4)
+
+    def test_device_id_scopes(self):
+        self.assertEqual(HostMemoryConfigFilterSet({"device_id": [self.d1.pk]}, self.queryset).qs.count(), 1)
+
+    def test_zram_algorithm(self):
+        self.assertEqual(
+            HostMemoryConfigFilterSet({"zram_algorithm": [ZramAlgorithmChoices.ZSTD]}, self.queryset).qs.count(), 1
+        )
+
+    def test_swappiness_exact(self):
+        self.assertEqual(HostMemoryConfigFilterSet({"swappiness": [10]}, self.queryset).qs.count(), 1)
+
+    def test_search(self):
+        self.assertEqual(HostMemoryConfigFilterSet({"q": self.d1.name}, self.queryset).qs.count(), 1)
+
+
+class WakeOnLanFilterSetTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.d1 = create_test_device("dev1")
+        cls.d2 = create_test_device("dev2")
+        cls.c1 = WakeOnLanConfig.objects.create(
+            device=cls.d1, enabled=True, is_waker=True, mode=WakeOnLanModeChoices.MAGIC
+        )
+        cls.c2 = WakeOnLanConfig.objects.create(
+            device=cls.d2, enabled=False, mode=WakeOnLanModeChoices.BROADCAST
+        )
+        cls.t1 = create_test_device("target1")
+        cls.t2 = create_test_device("target2")
+        WakeOnLanTarget.objects.bulk_create([
+            WakeOnLanTarget(config=cls.c1, target_device=cls.t1),
+            WakeOnLanTarget(config=cls.c1, target_device=cls.t2),
+            WakeOnLanTarget(config=cls.c2, target_device=cls.t1),
+        ])
+
+    def test_config_device_id(self):
+        self.assertEqual(
+            WakeOnLanConfigFilterSet({"device_id": [self.d1.pk]}, WakeOnLanConfig.objects.all()).qs.count(), 1
+        )
+
+    def test_config_is_waker_and_mode(self):
+        qs = WakeOnLanConfig.objects.all()
+        self.assertEqual(WakeOnLanConfigFilterSet({"is_waker": True}, qs).qs.count(), 1)
+        self.assertEqual(WakeOnLanConfigFilterSet({"mode": [WakeOnLanModeChoices.BROADCAST]}, qs).qs.count(), 1)
+
+    def test_config_search(self):
+        self.assertEqual(
+            WakeOnLanConfigFilterSet({"q": self.d1.name}, WakeOnLanConfig.objects.all()).qs.count(), 1
+        )
+
+    def test_target_config_scope(self):
+        self.assertEqual(
+            WakeOnLanTargetFilterSet({"config_id": [self.c1.pk]}, WakeOnLanTarget.objects.all()).qs.count(), 2
+        )
+
+    def test_target_device_scope(self):
+        self.assertEqual(
+            WakeOnLanTargetFilterSet({"target_device_id": [self.t1.pk]}, WakeOnLanTarget.objects.all()).qs.count(), 2
+        )
+
+    def test_target_search(self):
+        self.assertEqual(
+            WakeOnLanTargetFilterSet({"q": self.t2.name}, WakeOnLanTarget.objects.all()).qs.count(), 1
+        )

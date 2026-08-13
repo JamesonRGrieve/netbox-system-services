@@ -7,8 +7,9 @@ need a distinct device per created object, so each create_data row targets a fre
 """
 from utilities.testing import APIViewTestCases, create_test_device
 from netbox_system_services.models import (
-    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, NTPConfig, NTPServer, SNMPCommunity,
-    SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig, SystemTunable,
+    DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, HostMemoryConfig, NTPConfig, NTPServer,
+    SNMPCommunity, SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig,
+    SystemTunable, WakeOnLanConfig, WakeOnLanTarget,
 )
 
 
@@ -248,4 +249,58 @@ class DynamicDNSRecordAPITest(_CRUD):
             {"device": dev.pk, "fqdn": "k1.example", "service": "cloudflare", "credential_ref": "ddns/k1"},
             {"device": dev.pk, "fqdn": "k2.example", "service": "route53", "zone": "example", "enabled": False},
             {"device": dev.pk, "fqdn": "k3.example", "check_ip_method": "web"},
+        ]
+
+
+class HostMemoryConfigAPITest(_CRUD):
+    model = HostMemoryConfig
+    brief_fields = ["device", "display", "id", "url"]
+    bulk_update_data = {"swappiness": 15}
+
+    @classmethod
+    def setUpTestData(cls):
+        existing = [create_test_device(f"hmem-{i}") for i in range(3)]
+        HostMemoryConfig.objects.bulk_create([
+            HostMemoryConfig(device=d, swappiness=i * 10) for i, d in enumerate(existing)
+        ])
+        new = [create_test_device(f"hmem-new-{i}") for i in range(3)]
+        cls.create_data = [
+            {"device": new[0].pk, "swappiness": 10, "swap_file_size_mb": 2048,
+             "zram_percent": 50, "zram_algorithm": "zstd", "zram_priority": 100},
+            {"device": new[1].pk, "swap_file_size_mb": 0},
+            {"device": new[2].pk, "zram_size_mb": 4096, "zram_algorithm": "lz4"},
+        ]
+
+
+class WakeOnLanConfigAPITest(_CRUD):
+    model = WakeOnLanConfig
+    brief_fields = ["device", "display", "id", "is_waker", "url"]
+    bulk_update_data = {"is_waker": True}
+
+    @classmethod
+    def setUpTestData(cls):
+        existing = [create_test_device(f"wol-{i}") for i in range(3)]
+        WakeOnLanConfig.objects.bulk_create([WakeOnLanConfig(device=d) for d in existing])
+        new = [create_test_device(f"wol-new-{i}") for i in range(3)]
+        cls.create_data = [
+            {"device": new[0].pk, "enabled": True, "mode": "g", "is_waker": True},
+            {"device": new[1].pk, "enabled": False},
+            {"device": new[2].pk, "mode": "b", "is_waker": True},
+        ]
+
+
+class WakeOnLanTargetAPITest(_CRUD):
+    model = WakeOnLanTarget
+    brief_fields = ["config", "display", "id", "target_device", "url"]
+
+    @classmethod
+    def setUpTestData(cls):
+        cfg = WakeOnLanConfig.objects.create(device=create_test_device("wol-waker"), is_waker=True)
+        seed = [create_test_device(f"wol-seed-{i}") for i in range(3)]
+        WakeOnLanTarget.objects.bulk_create([WakeOnLanTarget(config=cfg, target_device=d) for d in seed])
+        new = [create_test_device(f"wol-tgt-{i}") for i in range(3)]
+        cls.create_data = [
+            {"config": cfg.pk, "target_device": new[0].pk},
+            {"config": cfg.pk, "target_device": new[1].pk},
+            {"config": cfg.pk, "target_device": new[2].pk},
         ]

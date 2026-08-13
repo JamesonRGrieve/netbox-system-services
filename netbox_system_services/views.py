@@ -301,3 +301,78 @@ class DynamicDNSRecordDeleteView(generic.ObjectDeleteView):
 class DynamicDNSRecordBulkDeleteView(generic.BulkDeleteView):
     queryset = models.DynamicDNSRecord.objects.all()
     table = tables.DynamicDNSRecordTable
+
+
+class HostMemoryConfigView(generic.ObjectView):
+    queryset = models.HostMemoryConfig.objects.all()
+
+
+class HostMemoryConfigListView(generic.ObjectListView):
+    queryset = models.HostMemoryConfig.objects.all()
+    table = tables.HostMemoryConfigTable
+    filterset = filtersets.HostMemoryConfigFilterSet
+    filterset_form = forms.HostMemoryConfigFilterForm
+
+
+class HostMemoryConfigEditView(generic.ObjectEditView):
+    queryset = models.HostMemoryConfig.objects.all()
+    form = forms.HostMemoryConfigForm
+
+
+class HostMemoryConfigDeleteView(generic.ObjectDeleteView):
+    queryset = models.HostMemoryConfig.objects.all()
+
+
+class HostMemoryConfigBulkDeleteView(generic.BulkDeleteView):
+    queryset = models.HostMemoryConfig.objects.all()
+    table = tables.HostMemoryConfigTable
+
+
+class WakeOnLanConfigView(generic.ObjectView):
+    queryset = models.WakeOnLanConfig.objects.all()
+
+
+class WakeOnLanConfigListView(generic.ObjectListView):
+    queryset = models.WakeOnLanConfig.objects.all()
+    table = tables.WakeOnLanConfigTable
+    filterset = filtersets.WakeOnLanConfigFilterSet
+    filterset_form = forms.WakeOnLanConfigFilterForm
+
+
+class WakeOnLanConfigEditView(generic.ObjectEditView):
+    queryset = models.WakeOnLanConfig.objects.all()
+    form = forms.WakeOnLanConfigForm
+
+
+class WakeOnLanConfigDeleteView(generic.ObjectDeleteView):
+    queryset = models.WakeOnLanConfig.objects.all()
+
+
+class WakeOnLanConfigBulkDeleteView(generic.BulkDeleteView):
+    queryset = models.WakeOnLanConfig.objects.all()
+    table = tables.WakeOnLanConfigTable
+
+
+class WakeOnLanTargetView(generic.ObjectView):
+    queryset = models.WakeOnLanTarget.objects.all()
+
+
+class WakeOnLanTargetListView(generic.ObjectListView):
+    queryset = models.WakeOnLanTarget.objects.all()
+    table = tables.WakeOnLanTargetTable
+    filterset = filtersets.WakeOnLanTargetFilterSet
+    filterset_form = forms.WakeOnLanTargetFilterForm
+
+
+class WakeOnLanTargetEditView(generic.ObjectEditView):
+    queryset = models.WakeOnLanTarget.objects.all()
+    form = forms.WakeOnLanTargetForm
+
+
+class WakeOnLanTargetDeleteView(generic.ObjectDeleteView):
+    queryset = models.WakeOnLanTarget.objects.all()
+
+
+class WakeOnLanTargetBulkDeleteView(generic.BulkDeleteView):
+    queryset = models.WakeOnLanTarget.objects.all()
+    table = tables.WakeOnLanTargetTable

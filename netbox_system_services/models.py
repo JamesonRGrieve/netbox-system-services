@@ -21,11 +21,17 @@ from .choices import (
 
 
 class SystemConfig(NetBoxModel):
-    """Per-device system identity and management-plane SSH/network config.
-    ``hostname`` is intentionally NOT stored — it is ``device.name``."""
+    """Per-device system identity and management-plane SSH/network config."""
 
     device = models.OneToOneField(
         "dcim.Device", on_delete=models.CASCADE, related_name="system_config"
+    )
+    fqdn = models.CharField(
+        max_length=255, blank=True,
+        help_text="Fully qualified domain name. The leftmost label is the system hostname; "
+                  "the remainder is the domain. When blank, device.name is used as hostname "
+                  "with no domain. Decoupled from device.name so Bao secret paths "
+                  "(keyed on device.name) remain stable."
     )
     default_gateway = models.GenericIPAddressField(
         null=True, blank=True, help_text="Management-plane default gateway IP."

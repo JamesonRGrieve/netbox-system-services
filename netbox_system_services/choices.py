@@ -68,3 +68,33 @@ class DNSForwardBackendChoices(ChoiceSet):
     UNBOUND = "unbound"
     DNSMASQ = "dnsmasq"
     CHOICES = [(UNBOUND, "Unbound", "blue"), (DNSMASQ, "Dnsmasq", "green")]
+
+
+class WakeOnLanModeChoices(ChoiceSet):
+    """ethtool Wake-on-LAN mode tokens (the ``wol`` flags a NIC can be armed with)."""
+    MAGIC = "g"
+    ARP = "a"
+    UNICAST = "u"
+    MULTICAST = "m"
+    BROADCAST = "b"
+    PHY = "p"
+    DISABLE = "d"
+    CHOICES = [
+        (MAGIC, "Magic packet (g)"), (ARP, "ARP (a)"), (UNICAST, "Unicast (u)"),
+        (MULTICAST, "Multicast (m)"), (BROADCAST, "Broadcast (b)"), (PHY, "PHY activity (p)"),
+        (DISABLE, "Disabled (d)"),
+    ]
+
+
+class ZramAlgorithmChoices(ChoiceSet):
+    """Compression algorithm for a zram swap device (values match the on-disk zram tokens)."""
+    ZSTD = "zstd"
+    LZ4 = "lz4"
+    LZO = "lzo"
+    LZO_RLE = "lzo-rle"
+    LZ4HC = "lz4hc"
+    DEFLATE_842 = "842"
+    CHOICES = [
+        (ZSTD, "Zstd"), (LZ4, "LZ4"), (LZO, "LZO"),
+        (LZO_RLE, "LZO-RLE"), (LZ4HC, "LZ4HC"), (DEFLATE_842, "842"),
+    ]

@@ -22,14 +22,14 @@ class SystemConfigForm(NetBoxModelForm):
     device = DynamicModelChoiceField(queryset=Device.objects.all())
 
     fieldsets = (
-        FieldSet("device", "default_gateway", name="System"),
+        FieldSet("device", "fqdn", "default_gateway", name="System"),
         FieldSet("ssh_port", "ssh_password_auth", "ssh_allow_users", name="SSH"),
         FieldSet("location", "contact", name="SNMP identity"),
     )
 
     class Meta:
         model = SystemConfig
-        fields = ["device", "default_gateway", "ssh_port", "ssh_password_auth", "ssh_allow_users", "location", "contact", "tags"]
+        fields = ["device", "fqdn", "default_gateway", "ssh_port", "ssh_password_auth", "ssh_allow_users", "location", "contact", "tags"]
 
 
 class SNMPConfigForm(NetBoxModelForm):

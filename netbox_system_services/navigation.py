@@ -17,7 +17,15 @@ def _item(model, label):
 menu = PluginMenu(
     label="System Services",
     groups=(
-        ("System", (_item("systemconfig", "System Config"),)),
+        (
+            "System",
+            (
+                _item("systemconfig", "System Config"),
+                _item("hostmemoryconfig", "Host Memory Config"),
+                _item("wakeonlanconfig", "Wake-on-LAN Config"),
+                _item("wakeonlantarget", "Wake-on-LAN Targets"),
+            ),
+        ),
         (
             "SNMP",
             (

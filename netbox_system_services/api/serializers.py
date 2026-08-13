@@ -17,7 +17,7 @@ class SystemConfigSerializer(NetBoxModelSerializer):
     class Meta:
         model = SystemConfig
         fields = [
-            "id", "url", "display", "device", "default_gateway", "location", "contact",
+            "id", "url", "display", "device", "fqdn", "default_gateway", "location", "contact",
             "ssh_port", "ssh_password_auth", "ssh_allow_users",
             "ssh_proxy_host", "ssh_proxy_port", "ssh_proxy_user", "ssh_proxy_identity",
             "tags", "custom_fields", "created", "last_updated",
