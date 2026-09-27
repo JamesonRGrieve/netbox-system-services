@@ -23,13 +23,21 @@ class SystemConfigForm(NetBoxModelForm):
 
     fieldsets = (
         FieldSet("device", "fqdn", "default_gateway", name="System"),
-        FieldSet("ssh_port", "ssh_password_auth", "ssh_allow_users", name="SSH"),
+        FieldSet("ssh_port", "ssh_password_auth", "ssh_allow_users", "ssh_host", "ssh_user",
+                 "ssh_identity", name="SSH"),
+        FieldSet("manage_interface_baseline", "manage_base_lan", "manage_lan",
+                 "manage_timezone", "manage_reconcile", "manage_plugin_aliases",
+                 name="Managed subsystems"),
+        FieldSet("wan_proto", "lan_if", "vlan_trunk", "vlanif_pfstyle",
+                 "openwrt_native_dsa", "openwrt_network_reload", "dhcp_engine",
+                 "haproxy_setpath_separate_type", "login_banner",
+                 name="Platform quirks"),
         FieldSet("location", "contact", name="SNMP identity"),
     )
 
     class Meta:
         model = SystemConfig
-        fields = ["device", "fqdn", "default_gateway", "ssh_port", "ssh_password_auth", "ssh_allow_users", "location", "contact", "tags"]
+        fields = ["device", "fqdn", "default_gateway", "ssh_port", "ssh_password_auth", "ssh_allow_users", "location", "contact", "tags" "ssh_host", "ssh_user", "ssh_identity", "login_banner", "manage_interface_baseline", "manage_base_lan", "manage_lan", "manage_timezone", "manage_reconcile", "manage_plugin_aliases", "wan_proto", "lan_if", "vlan_trunk", "vlanif_pfstyle", "openwrt_native_dsa", "openwrt_network_reload", "dhcp_engine", "haproxy_setpath_separate_type",]
 
 
 class SNMPConfigForm(NetBoxModelForm):

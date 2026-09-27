@@ -61,6 +61,82 @@ class SystemConfig(NetBoxModel):
         max_length=255, blank=True, help_text="OpenBao KV path for the ProxyJump private key."
     )
 
+    # --- Management reach (supersedes the ssh_host/ssh_user/ssh_identity custom fields) ---
+    ssh_host = models.CharField(
+        max_length=255, blank=True,
+        help_text="Address SSHd is reached at, when that is NOT the device's primary_ip4. "
+                  "OPNsense binds sshd to a different interface than its API, so the two differ. "
+                  "Blank = use primary_ip4."
+    )
+    ssh_user = models.CharField(
+        max_length=128, blank=True, help_text="SSH user for management. Blank = root."
+    )
+    ssh_identity = models.CharField(
+        max_length=255, blank=True,
+        help_text="OpenBao KV path for this device's own SSH private key. A reference, never the "
+                  "key. Blank = the shared runner identity."
+    )
+    login_banner = models.TextField(
+        blank=True, help_text="Pre-login banner text (/etc/issue.net or the platform equivalent)."
+    )
+
+    # --- Subsystem management toggles: what the pipeline is allowed to rewrite ---
+    # Each one exists because an ADOPTED device must not have that subsystem reset to the
+    # fleet baseline on its first converge. They are opt-OUT (default true) except where
+    # enabling would rewrite a live box, which is why manage_interface_baseline defaults false.
+    manage_interface_baseline = models.BooleanField(
+        default=False,
+        help_text="Rewrite the WAN/MGMT/LAN interface baseline. FALSE for any already-deployed "
+                  "multi-VLAN box: enabling it re-runs a 3-NIC bringup over live assignments."
+    )
+    manage_base_lan = models.BooleanField(
+        default=False, help_text="Manage the untagged base LAN section on the trunk parent."
+    )
+    manage_lan = models.BooleanField(default=True, help_text="Manage LAN interface config.")
+    manage_timezone = models.BooleanField(default=True, help_text="Manage the system timezone.")
+    manage_reconcile = models.BooleanField(
+        default=True,
+        help_text="Emit the unconditional per-converge service reload. FALSE where the mgmt user "
+                  "cannot run it (e.g. an ubus login lacking the file.exec ACL); core CRUD still "
+                  "reloads on write."
+    )
+    manage_plugin_aliases = models.BooleanField(
+        default=True, help_text="Manage firewall aliases owned by the plugin layer."
+    )
+
+    # --- Platform quirks ---
+    wan_proto = models.CharField(
+        max_length=32, blank=True, help_text="WAN addressing protocol (dhcp, static, pppoe...)."
+    )
+    lan_if = models.CharField(
+        max_length=64, blank=True, help_text="Physical interface carrying the LAN role."
+    )
+    vlan_trunk = models.CharField(
+        max_length=64, blank=True,
+        help_text="Physical parent the VLAN sub-interfaces trunk over (e.g. re0)."
+    )
+    vlanif_pfstyle = models.BooleanField(
+        default=False,
+        help_text="Name VLAN interfaces the pfSense way rather than the OPNsense way."
+    )
+    openwrt_native_dsa = models.BooleanField(
+        default=False,
+        help_text="Device uses the native DSA bridge-VLAN model rather than legacy swconfig."
+    )
+    openwrt_network_reload = models.BooleanField(
+        default=True,
+        help_text="Allow a full `network` reload. A reload re-applies any reset='1' stanza, so it "
+                  "can bounce the whole switch — off for boxes where that is unacceptable."
+    )
+    dhcp_engine = models.CharField(
+        max_length=32, blank=True, help_text="DHCP server implementation (dnsmasq, kea, isc)."
+    )
+    haproxy_setpath_separate_type = models.BooleanField(
+        default=False,
+        help_text="This HAProxy build needs set-path and set-header as SEPARATE actions rather "
+                  "than one combined action."
+    )
+
     class Meta:
         ordering = ["device"]
         verbose_name = "System Config"

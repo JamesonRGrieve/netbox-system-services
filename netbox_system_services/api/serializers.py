@@ -21,6 +21,25 @@ class SystemConfigSerializer(NetBoxModelSerializer):
             "ssh_port", "ssh_password_auth", "ssh_allow_users",
             "ssh_proxy_host", "ssh_proxy_port", "ssh_proxy_user", "ssh_proxy_identity",
             "tags", "custom_fields", "created", "last_updated",
+        
+            "ssh_host",
+            "ssh_user",
+            "ssh_identity",
+            "login_banner",
+            "manage_interface_baseline",
+            "manage_base_lan",
+            "manage_lan",
+            "manage_timezone",
+            "manage_reconcile",
+            "manage_plugin_aliases",
+            "wan_proto",
+            "lan_if",
+            "vlan_trunk",
+            "vlanif_pfstyle",
+            "openwrt_native_dsa",
+            "openwrt_network_reload",
+            "dhcp_engine",
+            "haproxy_setpath_separate_type",
         ]
         brief_fields = ["id", "url", "display", "device"]
 

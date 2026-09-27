@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "netbox-system-services"
-version = "0.0.1"
+version = "0.1.0"
 description = "Native NetBox source of truth for device management-plane services (SNMP, syslog, NTP, DNS resolver, system identity)"
 readme = "README.md"
 requires-python = ">=3.10"
