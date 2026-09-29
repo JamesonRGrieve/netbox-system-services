@@ -14,7 +14,7 @@ class SystemConfigTable(NetBoxTable):
 
     class Meta(NetBoxTable.Meta):
         model = SystemConfig
-        fields = ("pk", "id", "device", "fqdn", "default_gateway", "ssh_port", "ssh_password_auth", "location", "contact", "tags", "created", "last_updated" "ssh_host", "ssh_user", "vlan_trunk", "dhcp_engine",)
+        fields = ("pk", "id", "device", "fqdn", "default_gateway", "ssh_port", "ssh_password_auth", "location", "contact", "tags", "created", "last_updated", "ssh_host", "ssh_user", "vlan_trunk", "dhcp_engine",)
         default_columns = ("device", "fqdn", "default_gateway", "ssh_port", "location", "contact")
 
 
