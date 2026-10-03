@@ -41,7 +41,8 @@ class SystemConfigAPITest(_PluginAPI, *_CRUD):
         SystemConfig.objects.bulk_create([SystemConfig(device=d, location=f"r{i}") for i, d in enumerate(existing)])
         new = [create_test_device(f"sys-new-{i}") for i in range(3)]
         cls.create_data = [
-            {"device": new[0].pk, "default_gateway": "192.0.2.1", "location": "A", "contact": "a@x"},
+            {"device": new[0].pk, "default_gateway": "192.0.2.1", "location": "A", "contact": "a@x",
+             "config_history_count": 500},
             {"device": new[1].pk, "default_gateway": "192.0.2.2"},
             {"device": new[2].pk, "location": "C"},
         ]

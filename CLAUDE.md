@@ -78,7 +78,7 @@ the secret.
 Per-device singleton configs are `OneToOneField` to `dcim.Device` (`on_delete=CASCADE`); the
 repeating data hangs off them as FK child rows.
 
-- **SystemConfig** (1:1 Device): `default_gateway`, `location`, `contact`.
+- **SystemConfig** (1:1 Device): `default_gateway`, `location`, `contact`; `config_history_count` (configuration revisions the device keeps — OPNsense `<system><backupcount>`; null = device default, min 1).
 - **SNMPConfig** (1:1 Device): `enabled`, `listen_interface`.
   - **SNMPCommunity** (FK SNMPConfig): `name` (OpenBao key), `access`, `restricted`; unique per config+name.
   - **SNMPTrapTarget** (FK SNMPConfig): `target`, `port`, `version`, `community_ref` (OpenBao key).

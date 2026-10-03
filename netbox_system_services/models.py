@@ -9,7 +9,7 @@ community/trap models keep only a *logical name/ref* that keys the actual secret
 """
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
-from django.core.validators import MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.urls import reverse
 from netbox.models import NetBoxModel
@@ -135,6 +135,14 @@ class SystemConfig(NetBoxModel):
         default=False,
         help_text="This HAProxy build needs set-path and set-header as SEPARATE actions rather "
                   "than one combined action."
+    )
+
+    # --- Configuration history ---
+    config_history_count = models.PositiveIntegerField(
+        null=True, blank=True, validators=[MinValueValidator(1)],
+        help_text="Configuration revisions the device keeps (OPNsense <system><backupcount>). "
+                  "Blank = leave the device default (100 on OPNsense). 0 is rejected: OPNsense "
+                  "would delete every saved revision."
     )
 
     class Meta:

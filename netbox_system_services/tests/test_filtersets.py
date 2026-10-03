@@ -26,7 +26,7 @@ class SystemConfigFilterSetTest(TestCase):
     def setUpTestData(cls):
         cls.d1 = create_test_device("dev1")
         cls.d2 = create_test_device("dev2")
-        SystemConfig.objects.create(device=cls.d1, location="DC-A", contact="a@x")
+        SystemConfig.objects.create(device=cls.d1, location="DC-A", contact="a@x", config_history_count=500)
         SystemConfig.objects.create(device=cls.d2, location="DC-B", contact="b@x")
 
     def test_device_id_scopes(self):
@@ -37,6 +37,10 @@ class SystemConfigFilterSetTest(TestCase):
 
     def test_search(self):
         self.assertEqual(SystemConfigFilterSet({"q": "DC-A"}, self.queryset).qs.count(), 1)
+
+    def test_config_history_count(self):
+        qs = SystemConfigFilterSet({"config_history_count": [500]}, self.queryset).qs
+        self.assertEqual(list(qs.values_list("device", flat=True)), [self.d1.pk])
 
 
 class SNMPFilterSetTest(TestCase):

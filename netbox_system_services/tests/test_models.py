@@ -35,6 +35,19 @@ class SystemConfigModelTest(TestCase):
         with self.assertRaises(IntegrityError), transaction.atomic():
             SystemConfig.objects.create(device=self.device)
 
+    def test_config_history_count_blank_means_device_default(self):
+        self.assertIsNone(SystemConfig.objects.create(device=self.device).config_history_count)
+
+    def test_config_history_count_round_trips(self):
+        c = SystemConfig.objects.create(device=self.device, config_history_count=500)
+        c.refresh_from_db()
+        self.assertEqual(c.config_history_count, 500)
+        c.full_clean()
+
+    def test_config_history_count_rejects_zero(self):
+        with self.assertRaises(ValidationError):
+            SystemConfig(device=self.device, config_history_count=0).full_clean()
+
 
 class SNMPModelTest(TestCase):
     @classmethod

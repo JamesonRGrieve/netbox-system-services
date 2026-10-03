@@ -40,6 +40,7 @@ class SystemConfigSerializer(NetBoxModelSerializer):
             "openwrt_network_reload",
             "dhcp_engine",
             "haproxy_setpath_separate_type",
+            "config_history_count",
         ]
         brief_fields = ["id", "url", "display", "device"]
 

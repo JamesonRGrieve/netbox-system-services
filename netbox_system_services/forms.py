@@ -33,11 +33,12 @@ class SystemConfigForm(NetBoxModelForm):
                  "haproxy_setpath_separate_type", "login_banner",
                  name="Platform quirks"),
         FieldSet("location", "contact", name="SNMP identity"),
+        FieldSet("config_history_count", name="Configuration history"),
     )
 
     class Meta:
         model = SystemConfig
-        fields = ["device", "fqdn", "default_gateway", "ssh_port", "ssh_password_auth", "ssh_allow_users", "location", "contact", "tags", "ssh_host", "ssh_user", "ssh_identity", "login_banner", "manage_interface_baseline", "manage_base_lan", "manage_lan", "manage_timezone", "manage_reconcile", "manage_plugin_aliases", "wan_proto", "lan_if", "vlan_trunk", "vlanif_pfstyle", "openwrt_native_dsa", "openwrt_network_reload", "dhcp_engine", "haproxy_setpath_separate_type",]
+        fields = ["device", "fqdn", "default_gateway", "ssh_port", "ssh_password_auth", "ssh_allow_users", "location", "contact", "tags", "ssh_host", "ssh_user", "ssh_identity", "login_banner", "manage_interface_baseline", "manage_base_lan", "manage_lan", "manage_timezone", "manage_reconcile", "manage_plugin_aliases", "wan_proto", "lan_if", "vlan_trunk", "vlanif_pfstyle", "openwrt_native_dsa", "openwrt_network_reload", "dhcp_engine", "haproxy_setpath_separate_type", "config_history_count",]
 
 
 class SNMPConfigForm(NetBoxModelForm):
