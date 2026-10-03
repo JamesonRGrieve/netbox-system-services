@@ -13,17 +13,24 @@ from netbox_system_services.models import (
 )
 
 
-class _CRUD(
+# A tuple of bases, not a TestCase subclass: a shared TestCase base is itself collected and run
+# with model=None. Each test class lists the namespace mixin first, then these.
+_CRUD = (
     APIViewTestCases.GetObjectViewTestCase,
     APIViewTestCases.ListObjectsViewTestCase,
     APIViewTestCases.CreateObjectViewTestCase,
     APIViewTestCases.UpdateObjectViewTestCase,
     APIViewTestCases.DeleteObjectViewTestCase,
-):
-    pass
+)
 
 
-class SystemConfigAPITest(_CRUD):
+class _PluginAPI:
+    # Plugin API routes are registered under "plugins-api:<label>-api"; the NetBox test base
+    # class reverses "<view_namespace>-api", so the "plugins-api:" prefix must be supplied.
+    view_namespace = "plugins-api:netbox_system_services"
+
+
+class SystemConfigAPITest(_PluginAPI, *_CRUD):
     model = SystemConfig
     brief_fields = ["device", "display", "id", "url"]
     bulk_update_data = {"location": "bulk-room"}
@@ -40,7 +47,7 @@ class SystemConfigAPITest(_CRUD):
         ]
 
 
-class SNMPConfigAPITest(_CRUD):
+class SNMPConfigAPITest(_PluginAPI, *_CRUD):
     model = SNMPConfig
     brief_fields = ["device", "display", "enabled", "id", "url"]
     bulk_update_data = {"listen_interface": "mgmt"}
@@ -57,7 +64,7 @@ class SNMPConfigAPITest(_CRUD):
         ]
 
 
-class SNMPCommunityAPITest(_CRUD):
+class SNMPCommunityAPITest(_PluginAPI, *_CRUD):
     model = SNMPCommunity
     brief_fields = ["access", "display", "id", "name", "url"]
     bulk_update_data = {"restricted": True}
@@ -68,7 +75,7 @@ class SNMPCommunityAPITest(_CRUD):
         SNMPCommunity.objects.bulk_create([
             SNMPCommunity(snmp_config=cfg, name="c1", access="ro"),
             SNMPCommunity(snmp_config=cfg, name="c2", access="rw"),
-            SNMPCommunity(snmp_config=cfg, name="c3", access="ro", restricted=True),
+            SNMPCommunity(snmp_config=cfg, name="c3", access="ro"),
         ])
         cls.create_data = [
             {"snmp_config": cfg.pk, "name": "k1", "access": "ro"},
@@ -77,10 +84,10 @@ class SNMPCommunityAPITest(_CRUD):
         ]
 
 
-class SNMPTrapTargetAPITest(_CRUD):
+class SNMPTrapTargetAPITest(_PluginAPI, *_CRUD):
     model = SNMPTrapTarget
     brief_fields = ["display", "id", "port", "target", "url"]
-    bulk_update_data = {"version": "v1"}
+    bulk_update_data = {"port": 2162}
 
     @classmethod
     def setUpTestData(cls):
@@ -97,7 +104,7 @@ class SNMPTrapTargetAPITest(_CRUD):
         ]
 
 
-class SyslogConfigAPITest(_CRUD):
+class SyslogConfigAPITest(_PluginAPI, *_CRUD):
     model = SyslogConfig
     brief_fields = ["device", "display", "id", "severity", "url"]
     bulk_update_data = {"retention_days": 30}
@@ -114,10 +121,10 @@ class SyslogConfigAPITest(_CRUD):
         ]
 
 
-class SyslogServerAPITest(_CRUD):
+class SyslogServerAPITest(_PluginAPI, *_CRUD):
     model = SyslogServer
     brief_fields = ["display", "host", "id", "port", "url"]
-    bulk_update_data = {"transport": "tcp"}
+    bulk_update_data = {"port": 1514}
 
     @classmethod
     def setUpTestData(cls):
@@ -134,7 +141,7 @@ class SyslogServerAPITest(_CRUD):
         ]
 
 
-class NTPConfigAPITest(_CRUD):
+class NTPConfigAPITest(_PluginAPI, *_CRUD):
     model = NTPConfig
     brief_fields = ["device", "display", "enabled", "id", "url"]
     bulk_update_data = {"serve_lan": True}
@@ -151,7 +158,7 @@ class NTPConfigAPITest(_CRUD):
         ]
 
 
-class NTPServerAPITest(_CRUD):
+class NTPServerAPITest(_PluginAPI, *_CRUD):
     model = NTPServer
     brief_fields = ["display", "host", "id", "prefer", "url"]
     bulk_update_data = {"prefer": True}
@@ -161,7 +168,7 @@ class NTPServerAPITest(_CRUD):
         cfg = NTPConfig.objects.create(device=create_test_device("ntp-srv"), enabled=True)
         NTPServer.objects.bulk_create([
             NTPServer(ntp_config=cfg, host="0.pool.ntp.org"),
-            NTPServer(ntp_config=cfg, host="1.pool.ntp.org", prefer=True),
+            NTPServer(ntp_config=cfg, host="1.pool.ntp.org"),
             NTPServer(ntp_config=cfg, host="192.0.2.123"),
         ])
         cls.create_data = [
@@ -171,7 +178,7 @@ class NTPServerAPITest(_CRUD):
         ]
 
 
-class DNSResolverConfigAPITest(_CRUD):
+class DNSResolverConfigAPITest(_PluginAPI, *_CRUD):
     model = DNSResolverConfig
     brief_fields = ["device", "display", "id", "mode", "url"]
     bulk_update_data = {"mode": "dhcp"}
@@ -192,10 +199,10 @@ class DNSResolverConfigAPITest(_CRUD):
         ]
 
 
-class DnsForwardZoneAPITest(_CRUD):
+class DnsForwardZoneAPITest(_PluginAPI, *_CRUD):
     model = DnsForwardZone
     brief_fields = ["device", "display", "domain", "id", "server", "url"]
-    bulk_update_data = {"backend": "dnsmasq"}
+    bulk_update_data = {"port": 5300}
 
     @classmethod
     def setUpTestData(cls):
@@ -212,7 +219,7 @@ class DnsForwardZoneAPITest(_CRUD):
         ]
 
 
-class SystemTunableAPITest(_CRUD):
+class SystemTunableAPITest(_PluginAPI, *_CRUD):
     model = SystemTunable
     brief_fields = ["device", "display", "id", "name", "url", "value"]
     bulk_update_data = {"description": "bulk-note"}
@@ -232,10 +239,10 @@ class SystemTunableAPITest(_CRUD):
         ]
 
 
-class DynamicDNSRecordAPITest(_CRUD):
+class DynamicDNSRecordAPITest(_PluginAPI, *_CRUD):
     model = DynamicDNSRecord
     brief_fields = ["device", "display", "fqdn", "id", "service", "url"]
-    bulk_update_data = {"enabled": False}
+    bulk_update_data = {"zone": "bulk.example"}
 
     @classmethod
     def setUpTestData(cls):
@@ -252,7 +259,9 @@ class DynamicDNSRecordAPITest(_CRUD):
         ]
 
 
-class HostMemoryConfigAPITest(_CRUD):
+
+
+class HostMemoryConfigAPITest(_PluginAPI, *_CRUD):
     model = HostMemoryConfig
     brief_fields = ["device", "display", "id", "url"]
     bulk_update_data = {"swappiness": 15}
@@ -272,7 +281,7 @@ class HostMemoryConfigAPITest(_CRUD):
         ]
 
 
-class WakeOnLanConfigAPITest(_CRUD):
+class WakeOnLanConfigAPITest(_PluginAPI, *_CRUD):
     model = WakeOnLanConfig
     brief_fields = ["device", "display", "id", "is_waker", "url"]
     bulk_update_data = {"is_waker": True}
@@ -289,7 +298,7 @@ class WakeOnLanConfigAPITest(_CRUD):
         ]
 
 
-class WakeOnLanTargetAPITest(_CRUD):
+class WakeOnLanTargetAPITest(_PluginAPI, *_CRUD):
     model = WakeOnLanTarget
     brief_fields = ["config", "display", "id", "target_device", "url"]
 
