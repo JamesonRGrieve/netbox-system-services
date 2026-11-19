@@ -63,4 +63,10 @@ urlpatterns = [
     *_routes("wake-on-lan-targets", "wakeonlantarget", models.WakeOnLanTarget,
              views.WakeOnLanTargetListView, views.WakeOnLanTargetEditView, views.WakeOnLanTargetView,
              views.WakeOnLanTargetDeleteView, views.WakeOnLanTargetBulkDeleteView),
+    *_routes("device-access-groups", "deviceaccessgroup", models.DeviceAccessGroup,
+             views.DeviceAccessGroupListView, views.DeviceAccessGroupEditView, views.DeviceAccessGroupView,
+             views.DeviceAccessGroupDeleteView, views.DeviceAccessGroupBulkDeleteView),
+    *_routes("device-local-accounts", "devicelocalaccount", models.DeviceLocalAccount,
+             views.DeviceLocalAccountListView, views.DeviceLocalAccountEditView, views.DeviceLocalAccountView,
+             views.DeviceLocalAccountDeleteView, views.DeviceLocalAccountBulkDeleteView),
 ]

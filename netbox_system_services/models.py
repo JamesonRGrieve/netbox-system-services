@@ -7,9 +7,11 @@ to the ``config_context`` keys being retired, with zero loss.
 SECRET POLICY: SNMP community strings and trap-target credentials are NEVER stored here. The
 community/trap models keep only a *logical name/ref* that keys the actual secret in OpenBao.
 """
+import re
+
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.urls import reverse
 from netbox.models import NetBoxModel
@@ -667,3 +669,100 @@ class DeviceCLILine(NetBoxModel):
 
     def get_absolute_url(self):
         return reverse("plugins:netbox_system_services:devicecliline", args=[self.pk])
+
+
+_ACCOUNT_NAME = RegexValidator(
+    r"^[a-zA-Z0-9._-]{1,32}$", "1-32 letters, digits, '.', '-' or '_' (the OPNsense user/group name rule)."
+)
+_SECRET_SEGMENT = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
+API_KEY_LEAVES = ("readonly", "write")
+
+
+class DeviceAccessGroup(NetBoxModel):
+    """A local access group on a device (OPNsense System → Access → Groups). Privileges live on
+    groups, never on users (Access & Identity: the readonly and iac tiers are groups whose users
+    are members). ``privileges`` are the device's own privilege ids, e.g. ``page-all``,
+    ``user-config-readonly``."""
+
+    device = models.ForeignKey(
+        "dcim.Device", on_delete=models.CASCADE, related_name="access_groups"
+    )
+    name = models.CharField(max_length=32, validators=[_ACCOUNT_NAME])
+    privileges = ArrayField(
+        models.CharField(max_length=128), blank=True, default=list,
+        help_text="Device privilege ids, e.g. page-all, user-config-readonly.",
+    )
+    description = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ["device", "name"]
+        verbose_name = "Device Access Group"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["device", "name"],
+                name="netbox_system_services_deviceaccessgroup_unique_device_name",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.device}: {self.name}"
+
+    def get_absolute_url(self):
+        return reverse("plugins:netbox_system_services:deviceaccessgroup", args=[self.pk])
+
+
+class DeviceLocalAccount(NetBoxModel):
+    """A local account on a device (OPNsense System → Access → Users), a member of one
+    :class:`DeviceAccessGroup` and holding no privileges of its own. Its login password is never
+    set (the device scrambles one). With ``api_key`` the pipeline mints the account one API key
+    and files it at ``secret_ref``, an OpenBao KV path whose leaf is the tier (``readonly`` or
+    ``write``). The key itself is NEVER stored here, nor in pipeline state."""
+
+    device = models.ForeignKey(
+        "dcim.Device", on_delete=models.CASCADE, related_name="local_accounts"
+    )
+    name = models.CharField(max_length=32, validators=[_ACCOUNT_NAME])
+    # RESTRICT, not PROTECT: a group with members can't be deleted on its own, but a
+    # device delete cascades to both its accounts and its groups in one go.
+    group = models.ForeignKey(
+        DeviceAccessGroup, on_delete=models.RESTRICT, related_name="members"
+    )
+    enabled = models.BooleanField(default=True)
+    api_key = models.BooleanField(
+        default=False, help_text="The pipeline mints this account one API key, filed at secret_ref."
+    )
+    secret_ref = models.CharField(
+        max_length=255, blank=True,
+        help_text="OpenBao KV path the minted key is filed at, e.g. "
+                  "prod/boden/infra/hq/hq-opnsense/readonly. NEVER the key itself.",
+    )
+    description = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ["device", "name"]
+        verbose_name = "Device Local Account"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["device", "name"],
+                name="netbox_system_services_devicelocalaccount_unique_device_name",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.device}: {self.name}"
+
+    def get_absolute_url(self):
+        return reverse("plugins:netbox_system_services:devicelocalaccount", args=[self.pk])
+
+    def clean(self):
+        super().clean()
+        if self.group_id is not None and self.device_id is not None and self.group.device_id != self.device_id:
+            raise ValidationError({"group": "The group must belong to this account's device."})
+        if self.api_key and not self.secret_ref:
+            raise ValidationError({"secret_ref": "An account with an API key needs the OpenBao path it is filed at."})
+        if self.secret_ref:
+            segments = self.secret_ref.split("/")
+            if not all(_SECRET_SEGMENT.match(s) and ".." not in s for s in segments):
+                raise ValidationError({"secret_ref": "Plain lower-case path segments, no leading or trailing '/'."})
+            if segments[-1] not in API_KEY_LEAVES:
+                raise ValidationError({"secret_ref": f"The leaf must be a tier: one of {', '.join(API_KEY_LEAVES)}."})

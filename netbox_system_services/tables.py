@@ -4,7 +4,7 @@ from netbox.tables import NetBoxTable, columns
 from .models import (
     DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, HostMemoryConfig, NTPConfig, NTPServer,
     SNMPCommunity, SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig,
-    SystemTunable, WakeOnLanConfig, WakeOnLanTarget,
+    SystemTunable, WakeOnLanConfig, WakeOnLanTarget, DeviceAccessGroup, DeviceLocalAccount,
 )
 
 
@@ -184,3 +184,29 @@ class WakeOnLanTargetTable(NetBoxTable):
         model = WakeOnLanTarget
         fields = ("pk", "id", "config", "target_device", "tags", "created", "last_updated")
         default_columns = ("config", "target_device")
+
+
+class DeviceAccessGroupTable(NetBoxTable):
+    device = tables.Column(linkify=True)
+    name = tables.Column(linkify=True)
+    privileges = columns.ArrayColumn()
+    tags = columns.TagColumn(url_name="plugins:netbox_system_services:deviceaccessgroup_list")
+
+    class Meta(NetBoxTable.Meta):
+        model = DeviceAccessGroup
+        fields = ("pk", "id", "device", "name", "privileges", "description", "tags", "created", "last_updated")
+        default_columns = ("device", "name", "privileges")
+
+
+class DeviceLocalAccountTable(NetBoxTable):
+    device = tables.Column(linkify=True)
+    name = tables.Column(linkify=True)
+    group = tables.Column(linkify=True)
+    enabled = columns.BooleanColumn()
+    api_key = columns.BooleanColumn()
+    tags = columns.TagColumn(url_name="plugins:netbox_system_services:devicelocalaccount_list")
+
+    class Meta(NetBoxTable.Meta):
+        model = DeviceLocalAccount
+        fields = ("pk", "id", "device", "name", "group", "enabled", "api_key", "secret_ref", "description", "tags", "created", "last_updated")
+        default_columns = ("device", "name", "group", "enabled", "api_key")

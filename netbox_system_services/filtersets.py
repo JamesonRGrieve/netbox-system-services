@@ -12,7 +12,7 @@ from .models import (
     DeviceCLILine, DnsForwardZone, DnsHostAlias, DnsmasqHost, DNSResolverConfig,
     DynamicDNSRecord, HostMemoryConfig, NTPConfig, NTPServer,
     SNMPCommunity, SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig,
-    SystemTunable, WakeOnLanConfig, WakeOnLanTarget,
+    SystemTunable, WakeOnLanConfig, WakeOnLanTarget, DeviceAccessGroup, DeviceLocalAccount,
 )
 
 # Explicit FK filters: django-filter does NOT derive `<fk>_id` from a bare FK in Meta.fields,
@@ -258,3 +258,27 @@ class DeviceCLILineFilterSet(NetBoxModelFilterSet):
 
     def search(self, queryset, name, value):
         return queryset.filter(Q(line__icontains=value) | Q(device__name__icontains=value))
+
+
+class DeviceAccessGroupFilterSet(_DeviceFilterMixin):
+    class Meta:
+        model = DeviceAccessGroup
+        fields = ["id", "name", "description"]
+
+    def search(self, queryset, name, value):
+        return queryset.filter(Q(device__name__icontains=value) | Q(name__icontains=value))
+
+
+class DeviceLocalAccountFilterSet(_DeviceFilterMixin):
+    group_id = django_filters.ModelMultipleChoiceFilter(
+        field_name="group", queryset=DeviceAccessGroup.objects.all(), label="Group (ID)"
+    )
+
+    class Meta:
+        model = DeviceLocalAccount
+        fields = ["id", "name", "enabled", "api_key", "secret_ref", "description"]
+
+    def search(self, queryset, name, value):
+        return queryset.filter(
+            Q(device__name__icontains=value) | Q(name__icontains=value) | Q(group__name__icontains=value)
+        )

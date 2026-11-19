@@ -376,3 +376,53 @@ class WakeOnLanTargetDeleteView(generic.ObjectDeleteView):
 class WakeOnLanTargetBulkDeleteView(generic.BulkDeleteView):
     queryset = models.WakeOnLanTarget.objects.all()
     table = tables.WakeOnLanTargetTable
+
+
+class DeviceAccessGroupView(generic.ObjectView):
+    queryset = models.DeviceAccessGroup.objects.all()
+
+
+class DeviceAccessGroupListView(generic.ObjectListView):
+    queryset = models.DeviceAccessGroup.objects.all()
+    table = tables.DeviceAccessGroupTable
+    filterset = filtersets.DeviceAccessGroupFilterSet
+    filterset_form = forms.DeviceAccessGroupFilterForm
+
+
+class DeviceAccessGroupEditView(generic.ObjectEditView):
+    queryset = models.DeviceAccessGroup.objects.all()
+    form = forms.DeviceAccessGroupForm
+
+
+class DeviceAccessGroupDeleteView(generic.ObjectDeleteView):
+    queryset = models.DeviceAccessGroup.objects.all()
+
+
+class DeviceAccessGroupBulkDeleteView(generic.BulkDeleteView):
+    queryset = models.DeviceAccessGroup.objects.all()
+    table = tables.DeviceAccessGroupTable
+
+
+class DeviceLocalAccountView(generic.ObjectView):
+    queryset = models.DeviceLocalAccount.objects.all()
+
+
+class DeviceLocalAccountListView(generic.ObjectListView):
+    queryset = models.DeviceLocalAccount.objects.all()
+    table = tables.DeviceLocalAccountTable
+    filterset = filtersets.DeviceLocalAccountFilterSet
+    filterset_form = forms.DeviceLocalAccountFilterForm
+
+
+class DeviceLocalAccountEditView(generic.ObjectEditView):
+    queryset = models.DeviceLocalAccount.objects.all()
+    form = forms.DeviceLocalAccountForm
+
+
+class DeviceLocalAccountDeleteView(generic.ObjectDeleteView):
+    queryset = models.DeviceLocalAccount.objects.all()
+
+
+class DeviceLocalAccountBulkDeleteView(generic.BulkDeleteView):
+    queryset = models.DeviceLocalAccount.objects.all()
+    table = tables.DeviceLocalAccountTable

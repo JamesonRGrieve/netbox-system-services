@@ -5,7 +5,7 @@ from ..models import (
     DeviceCLILine, DnsForwardZone, DnsHostAlias, DnsmasqHost, DNSResolverConfig,
     DynamicDNSRecord, HostMemoryConfig, NTPConfig, NTPServer,
     SNMPCommunity, SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig,
-    SystemTunable, WakeOnLanConfig, WakeOnLanTarget,
+    SystemTunable, WakeOnLanConfig, WakeOnLanTarget, DeviceAccessGroup, DeviceLocalAccount,
 )
 from .serializers import (
     DeviceCLILineSerializer, DnsForwardZoneSerializer, DnsHostAliasSerializer,
@@ -13,7 +13,7 @@ from .serializers import (
     HostMemoryConfigSerializer, NTPConfigSerializer, NTPServerSerializer, SNMPCommunitySerializer,
     SNMPConfigSerializer, SNMPTrapTargetSerializer, SyslogConfigSerializer, SyslogServerSerializer,
     SystemConfigSerializer, SystemTunableSerializer, WakeOnLanConfigSerializer,
-    WakeOnLanTargetSerializer,
+    WakeOnLanTargetSerializer, DeviceAccessGroupSerializer, DeviceLocalAccountSerializer,
 )
 
 
@@ -123,3 +123,15 @@ class DeviceCLILineViewSet(NetBoxModelViewSet):
     queryset = DeviceCLILine.objects.prefetch_related("device", "tags")
     serializer_class = DeviceCLILineSerializer
     filterset_class = filtersets.DeviceCLILineFilterSet
+
+
+class DeviceAccessGroupViewSet(NetBoxModelViewSet):
+    queryset = DeviceAccessGroup.objects.prefetch_related("device", "tags")
+    serializer_class = DeviceAccessGroupSerializer
+    filterset_class = filtersets.DeviceAccessGroupFilterSet
+
+
+class DeviceLocalAccountViewSet(NetBoxModelViewSet):
+    queryset = DeviceLocalAccount.objects.prefetch_related("device", "group", "tags")
+    serializer_class = DeviceLocalAccountSerializer
+    filterset_class = filtersets.DeviceLocalAccountFilterSet

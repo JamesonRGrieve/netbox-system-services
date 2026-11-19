@@ -6,7 +6,7 @@ from ..models import (
     DeviceCLILine, DnsForwardZone, DnsHostAlias, DnsmasqHost, DNSResolverConfig,
     DynamicDNSRecord, HostMemoryConfig, NTPConfig, NTPServer,
     SNMPCommunity, SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig,
-    SystemTunable, WakeOnLanConfig, WakeOnLanTarget,
+    SystemTunable, WakeOnLanConfig, WakeOnLanTarget, DeviceAccessGroup, DeviceLocalAccount,
 )
 
 
@@ -267,3 +267,30 @@ class DeviceCLILineSerializer(NetBoxModelSerializer):
             "tags", "custom_fields", "created", "last_updated",
         ]
         brief_fields = ["id", "url", "display", "device", "weight"]
+
+
+class DeviceAccessGroupSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:deviceaccessgroup-detail")
+    device = DeviceSerializer(nested=True)
+
+    class Meta:
+        model = DeviceAccessGroup
+        fields = [
+            "id", "url", "display", "device", "name", "privileges", "description",
+            "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "device", "name"]
+
+
+class DeviceLocalAccountSerializer(NetBoxModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="plugins-api:netbox_system_services-api:devicelocalaccount-detail")
+    device = DeviceSerializer(nested=True)
+    group = DeviceAccessGroupSerializer(nested=True)
+
+    class Meta:
+        model = DeviceLocalAccount
+        fields = [
+            "id", "url", "display", "device", "name", "group", "enabled", "api_key", "secret_ref",
+            "description", "tags", "custom_fields", "created", "last_updated",
+        ]
+        brief_fields = ["id", "url", "display", "device", "name"]

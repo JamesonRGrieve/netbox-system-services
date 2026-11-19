@@ -23,5 +23,7 @@ router.register("wake-on-lan-targets", views.WakeOnLanTargetViewSet)
 router.register("dns-host-aliases", views.DnsHostAliasViewSet)
 router.register("dnsmasq-hosts", views.DnsmasqHostViewSet)
 router.register("device-cli-lines", views.DeviceCLILineViewSet)
+router.register("device-access-groups", views.DeviceAccessGroupViewSet)
+router.register("device-local-accounts", views.DeviceLocalAccountViewSet)
 
 urlpatterns = router.urls

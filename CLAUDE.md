@@ -67,7 +67,7 @@ the secret.
 |------|----------------|
 | `__init__.py` | `PluginConfig` — name `netbox_system_services`, `base_url='system-services'`, min/max NetBox version |
 | `choices.py` | `ChoiceSet`s: SNMP access/version, syslog severity/facility/transport, DNS resolver mode |
-| `models.py` | the 9 service models (see §Model) |
+| `models.py` | the service models (see §Model) |
 | `migrations/` | hand-authored initial migration (NetBox disables makemigrations in prod); verify with `makemigrations --check --dry-run` on an ephemeral NetBox |
 | `api/serializers.py`, `api/views.py`, `api/urls.py` | REST API (`NetBoxModelViewSet`) — the contract `ansible-tofu` reads |
 | `filtersets.py` | `NetBoxModelFilterSet` per model (drives API + UI filtering) |
@@ -87,6 +87,8 @@ repeating data hangs off them as FK child rows.
 - **NTPConfig** (1:1 Device): `enabled`, `broadcast`, `serve_lan`.
   - **NTPServer** (FK NTPConfig): `host`, `prefer`.
 - **DNSResolverConfig** (1:1 Device): `mode`, `nameservers` (ordered `ArrayField`), `search_domains` (ordered `ArrayField`).
+- **DeviceAccessGroup** (FK Device): `name` (OPNsense group-name rule), `privileges` (`ArrayField` of the device's privilege ids); unique per device+name. Privileges live on groups only.
+- **DeviceLocalAccount** (FK Device): `name`, `group` (FK DeviceAccessGroup, RESTRICT: no lone delete of a group with members, but a device delete cascades; must be on the same device), `enabled`, `api_key`, `secret_ref`; unique per device+name. `api_key` = the pipeline mints one API key and files it at `secret_ref`, an OpenBao path whose last segment is a tier (`readonly`/`write`). The key is never stored here or in pipeline state; no login password is ever set.
 
 ---
 

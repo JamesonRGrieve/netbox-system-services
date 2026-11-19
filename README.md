@@ -34,6 +34,11 @@ Each feature is a **per-device singleton config** (`OneToOneField` to `dcim.Devi
 - **DNSResolverConfig** — `mode` (static/dhcp), `nameservers` (ordered array),
   `search_domains` (ordered array). The device's **own** resolver, **not** authoritative DNS
   zones (those are netbox-dns's job).
+- **DeviceAccessGroup** — a local access group on the device: `name`, `privileges` (the
+  device's privilege ids). Privileges live on groups, never on accounts.
+- **DeviceLocalAccount** — a local account, member of one group on the same device: `name`,
+  `group`, `enabled`, `api_key`, `secret_ref`. With `api_key`, the pipeline mints one API key and
+  files it at `secret_ref` (an OpenBao path ending in the tier leaf, `readonly` or `write`).
 
 All models inherit `NetBoxModel` (custom fields, tags, change logging, GraphQL, REST API).
 
@@ -41,7 +46,8 @@ All models inherit `NetBoxModel` (custom fields, tags, change logging, GraphQL, 
 
 SNMP community strings and trap-target credentials are **never** stored here. `SNMPCommunity.name`
 and `SNMPTrapTarget.community_ref` are **logical keys** that look the actual secret up in
-**OpenBao**. NetBox holds the structure; OpenBao holds the secret.
+**OpenBao**. NetBox holds the structure; OpenBao holds the secret. The same holds for a
+`DeviceLocalAccount`'s API key: `secret_ref` names where it is filed, never the key.
 
 ## Install
 

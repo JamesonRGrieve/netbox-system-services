@@ -14,7 +14,7 @@ from .choices import (
 from .models import (
     DnsForwardZone, DNSResolverConfig, DynamicDNSRecord, HostMemoryConfig, NTPConfig, NTPServer,
     SNMPCommunity, SNMPConfig, SNMPTrapTarget, SyslogConfig, SyslogServer, SystemConfig,
-    SystemTunable, WakeOnLanConfig, WakeOnLanTarget,
+    SystemTunable, WakeOnLanConfig, WakeOnLanTarget, DeviceAccessGroup, DeviceLocalAccount,
 )
 
 
@@ -307,3 +307,45 @@ class WakeOnLanTargetFilterForm(NetBoxModelFilterSetForm):
     config_id = DynamicModelMultipleChoiceField(queryset=WakeOnLanConfig.objects.all(), required=False, label="WoL Config")
     target_device_id = DynamicModelMultipleChoiceField(queryset=Device.objects.all(), required=False, label="Target Device")
     tag = TagFilterField(WakeOnLanTarget)
+
+
+class DeviceAccessGroupForm(NetBoxModelForm):
+    device = DynamicModelChoiceField(queryset=Device.objects.all())
+
+    fieldsets = (FieldSet("device", "name", "privileges", "description", name="Access Group"),)
+
+    class Meta:
+        model = DeviceAccessGroup
+        fields = ["device", "name", "privileges", "description", "tags"]
+
+
+class DeviceLocalAccountForm(NetBoxModelForm):
+    device = DynamicModelChoiceField(queryset=Device.objects.all())
+    group = DynamicModelChoiceField(
+        queryset=DeviceAccessGroup.objects.all(), query_params={"device_id": "$device"}
+    )
+
+    fieldsets = (
+        FieldSet("device", "name", "group", "enabled", name="Account"),
+        FieldSet("api_key", "secret_ref", name="API key"),
+        FieldSet("description", name="Notes"),
+    )
+
+    class Meta:
+        model = DeviceLocalAccount
+        fields = ["device", "name", "group", "enabled", "api_key", "secret_ref", "description", "tags"]
+
+
+class DeviceAccessGroupFilterForm(NetBoxModelFilterSetForm):
+    model = DeviceAccessGroup
+    device_id = DynamicModelMultipleChoiceField(queryset=Device.objects.all(), required=False, label="Device")
+    tag = TagFilterField(DeviceAccessGroup)
+
+
+class DeviceLocalAccountFilterForm(NetBoxModelFilterSetForm):
+    model = DeviceLocalAccount
+    device_id = DynamicModelMultipleChoiceField(queryset=Device.objects.all(), required=False, label="Device")
+    group_id = DynamicModelMultipleChoiceField(queryset=DeviceAccessGroup.objects.all(), required=False, label="Group")
+    enabled = forms.NullBooleanField(required=False)
+    api_key = forms.NullBooleanField(required=False)
+    tag = TagFilterField(DeviceLocalAccount)

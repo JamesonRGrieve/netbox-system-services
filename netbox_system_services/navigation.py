@@ -48,6 +48,13 @@ menu = PluginMenu(
             ),
         ),
         ("System Tunables", (_item("systemtunable", "System Tunables"),)),
+        (
+            "Access",
+            (
+                _item("deviceaccessgroup", "Device Access Groups"),
+                _item("devicelocalaccount", "Device Local Accounts"),
+            ),
+        ),
     ),
     icon_class="mdi mdi-cog-transfer",
 )
