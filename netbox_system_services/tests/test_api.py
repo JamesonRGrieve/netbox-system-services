@@ -42,7 +42,7 @@ class SystemConfigAPITest(_PluginAPI, *_CRUD):
         new = [create_test_device(f"sys-new-{i}") for i in range(3)]
         cls.create_data = [
             {"device": new[0].pk, "default_gateway": "192.0.2.1", "location": "A", "contact": "a@x",
-             "config_history_count": 500},
+             "config_history_count": 500, "allow_unsupported_transceiver": True},
             {"device": new[1].pk, "default_gateway": "192.0.2.2"},
             {"device": new[2].pk, "location": "C"},
         ]

@@ -21,7 +21,8 @@ Each feature is a **per-device singleton config** (`OneToOneField` to `dcim.Devi
 `on_delete=CASCADE`) plus **child rows** where the data repeats:
 
 - **SystemConfig** — `default_gateway`, `location` (sysLocation), `contact` (sysContact),
-  `config_history_count` (configuration revisions the device keeps; blank = the device default).
+  `config_history_count` (configuration revisions the device keeps; blank = the device default),
+  `allow_unsupported_transceiver` (AOS-S `allow-unsupported-transceiver`; default off).
   Hostname is `device.name`, never duplicated.
 - **SNMPConfig** — `enabled`, `listen_interface`. sysContact/sysLocation are read from
   SystemConfig, not duplicated.

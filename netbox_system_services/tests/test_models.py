@@ -35,6 +35,15 @@ class SystemConfigModelTest(TestCase):
         with self.assertRaises(IntegrityError), transaction.atomic():
             SystemConfig.objects.create(device=self.device)
 
+    def test_allow_unsupported_transceiver_defaults_off_and_round_trips(self):
+        c = SystemConfig.objects.create(device=self.device)
+        self.assertFalse(c.allow_unsupported_transceiver)
+        c.allow_unsupported_transceiver = True
+        c.save()
+        c.refresh_from_db()
+        self.assertTrue(c.allow_unsupported_transceiver)
+        c.full_clean()
+
     def test_config_history_count_blank_means_device_default(self):
         self.assertIsNone(SystemConfig.objects.create(device=self.device).config_history_count)
 

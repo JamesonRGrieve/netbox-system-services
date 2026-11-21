@@ -36,7 +36,7 @@ class _DeviceFilterMixin(NetBoxModelFilterSet):
 class SystemConfigFilterSet(_DeviceFilterMixin):
     class Meta:
         model = SystemConfig
-        fields = ["id", "default_gateway", "location", "contact", "config_history_count"]
+        fields = ["id", "default_gateway", "location", "contact", "config_history_count", "allow_unsupported_transceiver"]
 
     def search(self, queryset, name, value):
         return queryset.filter(

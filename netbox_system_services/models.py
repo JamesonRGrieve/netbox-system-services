@@ -147,6 +147,13 @@ class SystemConfig(NetBoxModel):
                   "would delete every saved revision."
     )
 
+    # --- Transceivers ---
+    allow_unsupported_transceiver = models.BooleanField(
+        default=False,
+        help_text="Let the switch bring up third-party optics/DACs it does not recognise "
+                  "(AOS-S `allow-unsupported-transceiver`). False = the switch default."
+    )
+
     class Meta:
         ordering = ["device"]
         verbose_name = "System Config"

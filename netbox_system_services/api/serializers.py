@@ -41,6 +41,7 @@ class SystemConfigSerializer(NetBoxModelSerializer):
             "dhcp_engine",
             "haproxy_setpath_separate_type",
             "config_history_count",
+            "allow_unsupported_transceiver",
         ]
         brief_fields = ["id", "url", "display", "device"]
 
